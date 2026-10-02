@@ -50,4 +50,6 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        # Dis test (Beta App Review) ve App Store gonderimi App Store Connect ekranindan elle yapilir;
+        # ic test grubu (Ebbedev) yeni derlemeleri kendiliginden alir.
+        submit_to_testflight: false
