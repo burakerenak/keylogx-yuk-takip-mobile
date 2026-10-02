@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1075480438540",
+    "project_id": "ebbedev-cargo-tracking-mobile",
+    "storage_bucket": "ebbedev-cargo-tracking-mobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1075480438540:android:63d050c1ed0c6977eb4b29",
+        "android_client_info": {
+          "package_name": "com.ebbedev.cargotrackingmobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBKesWDAg0NsrEgzJi9_Sl2QYstQJ0mNHg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
