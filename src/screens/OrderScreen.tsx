@@ -18,15 +18,11 @@ import { saveAsDraftIrsaliye } from '../api/uyumsoft';
 import { Alert, Linking, PermissionsAndroid, Platform } from 'react-native';
 import Card from '../components/Card';
 import { ambarSetDeliveryDate, ambarSetDeliveryEndDate, ambarSetLoadDate, ambarSetLoadEndDate } from '../api/ambar';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
-import { useSinglePickerStore } from '../store/singlePickerStore';
-import { getConstantList } from '../api/constant';
-import { CustomSingleSelectModel } from '../components/SingleSelect';
+import KanitFotograflari from '../components/KanitFotograflari';
 import Geolocation from '@react-native-community/geolocation';
 import { check, PERMISSIONS, request, RESULTS } from 'react-native-permissions';
 
 export default function OrderScreen() {
-    const showSinglePicker = useSinglePickerStore((s) => s.showSinglePicker);
     const route = useRoute<RouteProp<AppStackParamList, 'Order'>>();
 
     const [data, setData] = useState<GetAmbarVoyageByIdResponse | undefined>(undefined);
@@ -95,6 +91,9 @@ export default function OrderScreen() {
         }
     }
 
+    // Kanit fotografi ekrani. Acikken hangi siparis ve hangi adim icin acildigini tutar.
+    const [kanitEkrani, setKanitEkrani] = useState<{ ambarId: string, ambarVoyageId: string, mod: 'yukleme' | 'teslim' } | undefined>(undefined);
+
     const onAmbarSetLoadDate = async (_ambarVoyageId: string, _ambarId: string) => {
         var location = await getCurrentLocation();
 
@@ -102,10 +101,38 @@ export default function OrderScreen() {
         onGetAmbarVoyageById(_ambarVoyageId);
     };
 
-    const onAmbarSetLoadEndDate = async (_ambarVoyageId: string, _ambarId: string) => {
+    /**
+     * "Yukleme Yapildi" artik dogrudan kaydetmez: once kanit ekrani acilir.
+     * Yukleme kaniti cekilmeden tamamlanamaz; sunucu da kanitsiz istegi reddeder.
+     */
+    const onAmbarSetLoadEndDate = (_ambarVoyageId: string, _ambarId: string) => {
+        setKanitEkrani({ ambarId: _ambarId, ambarVoyageId: _ambarVoyageId, mod: 'yukleme' });
+    };
+
+    const yuklemeyiTamamla = async (_ambarVoyageId: string, _ambarId: string) => {
         var location = await getCurrentLocation();
 
-        var ambarSetLoadEndDateResponse = await ambarSetLoadEndDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude });
+        var yanit = await ambarSetLoadEndDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude });
+
+        setKanitEkrani(undefined);
+        onGetAmbarVoyageById(_ambarVoyageId);
+
+        // Surucu e-irsaliyeyi GIB'e gonderemez; gonderim web ekranindan yapiliyor.
+        // Yine de hatirlatma cikar, ayrica operasyon listesinde isaret gorunur.
+        Alert.alert(
+            "İrsaliye'yi GİB'e göndermelisiniz",
+            'Yükleme tamamlandı ve fotoğrafları kaydedildi. E-irsaliyenin GİB\'e gönderilmesi gerekiyor.',
+            [{ text: 'Tamam' }],
+        );
+    };
+
+    const teslimiTamamla = async (_ambarVoyageId: string, _ambarId: string) => {
+        var location = await getCurrentLocation();
+
+        // Fotograflar onceden tek tek yuklendi; bu cagriya b64 gonderilmez.
+        var yanit = await ambarSetDeliveryEndDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude });
+
+        setKanitEkrani(undefined);
         onGetAmbarVoyageById(_ambarVoyageId);
     };
 
@@ -116,128 +143,13 @@ export default function OrderScreen() {
         onGetAmbarVoyageById(_ambarVoyageId);
     };
 
-    const selectImage = (_tempAmbarId: string | undefined, _tempAmbarVoyageId: string | undefined, _tempFileType: CustomSingleSelectModel | undefined) => {
-        Alert.alert(
-            'Fotoğraf Ekle',
-            'Fotoğrafı nereden almak istiyorsunuz?',
-            [
-                {
-                    text: 'Kamera',
-                    onPress: () => openCamera(_tempAmbarId, _tempAmbarVoyageId, _tempFileType),
-                },
-                {
-                    text: 'Galeriden Seç',
-                    onPress: () => openGallery(_tempAmbarId, _tempAmbarVoyageId, _tempFileType),
-                },
-                {
-                    text: 'Vazgeç',
-                    style: 'cancel',
-                },
-            ],
-        );
-    };
-
-    const onDeliver = async (_ambarVoyageId: string, _ambarId: string) => {
-        var items = await getConstantList({ code: 'AMBAR_FILE_TYPE' });
-
-        showSinglePicker(items, (value: CustomSingleSelectModel | undefined) => {
-            if (value)
-                selectImage(_ambarId, _ambarVoyageId, value);
-        }, 'Dosya Türü');
+    /**
+     * "Teslim Edildi" artik tek fotograf + tur secimi yerine kanit ekranini acar.
+     * Eski akis (showSinglePicker + selectImage) kaldirildi.
+     */
+    const onDeliver = (_ambarVoyageId: string, _ambarId: string) => {
+        setKanitEkrani({ ambarId: _ambarId, ambarVoyageId: _ambarVoyageId, mod: 'teslim' });
     }
-
-    const onAmbarSetDeliveryEndDate = async (_tempAmbarId: string | undefined, _tempAmbarVoyageId: string | undefined, _tempFileType: CustomSingleSelectModel | undefined, _b64: string | undefined) => {
-        if (_tempAmbarId && _tempAmbarVoyageId && _tempFileType && _b64) {
-            var location = await getCurrentLocation();
-
-            var ambarSetDeliveryEndDateResponse = await ambarSetDeliveryEndDate({ ambarId: _tempAmbarId, b64: _b64, fileTypeId: _tempFileType.value, lat: location?.latitude, lon: location?.longitude });
-            onGetAmbarVoyageById(_tempAmbarVoyageId);
-        }
-    };
-
-    const openCamera = async (_tempAmbarId: string | undefined, _tempAmbarVoyageId: string | undefined, _tempFileType: CustomSingleSelectModel | undefined) => {
-        const permission =
-            Platform.OS === 'ios'
-                ? PERMISSIONS.IOS.CAMERA
-                : PERMISSIONS.ANDROID.CAMERA;
-
-        let status = await check(permission);
-
-        if (status === RESULTS.DENIED) {
-            status = await request(permission);
-        }
-
-        if (status === RESULTS.DENIED) {
-            Alert.alert("Hata", "Kamera izini verilmedi.");
-            return;
-        }
-
-        const result = await launchCamera({
-            mediaType: 'photo',
-            includeBase64: true,
-            quality: 0.8,
-        });
-
-        if (result.didCancel) {
-            return;
-        }
-
-        if (result.errorCode) {
-            return;
-        }
-
-        const asset = result.assets?.[0];
-
-        if (!asset?.base64) {
-            return;
-        }
-
-        const base64 = asset.base64;
-
-        onAmbarSetDeliveryEndDate(_tempAmbarId, _tempAmbarVoyageId, _tempFileType, base64);
-    };
-
-    const openGallery = async (_tempAmbarId: string | undefined, _tempAmbarVoyageId: string | undefined, _tempFileType: CustomSingleSelectModel | undefined) => {
-        const permission =
-            Platform.OS === 'ios'
-                ? PERMISSIONS.IOS.PHOTO_LIBRARY
-                : PERMISSIONS.ANDROID.READ_MEDIA_IMAGES;
-
-        let status = await check(permission);
-
-        if (status === RESULTS.DENIED) {
-            status = await request(permission);
-        }
-
-        if (status === RESULTS.DENIED) {
-            Alert.alert("Hata", "Galeri izini verilmedi.");
-            return;
-        }
-
-        const result = await launchImageLibrary({
-            mediaType: 'photo',
-            includeBase64: true,
-            quality: 0.8,
-        });
-
-        if (result.didCancel) {
-            return;
-        }
-
-        if (result.errorCode) {
-            return;
-        }
-
-        const asset = result.assets?.[0];
-
-        if (!asset?.base64) {
-            return;
-        }
-
-        const base64 = asset.base64;
-
-        onAmbarSetDeliveryEndDate(_tempAmbarId, _tempAmbarVoyageId, _tempFileType, base64);
-    };
 
     const redirectToNavigation = (item: GetAmbarVoyageByIdResponseAmbar) => {
         if (!item.loadDate) {
@@ -529,6 +441,22 @@ export default function OrderScreen() {
                     </Box>
                 )
             }
+
+            <KanitFotograflari
+                isShown={kanitEkrani !== undefined}
+                ambarId={kanitEkrani?.ambarId}
+                mod={kanitEkrani?.mod ?? "yukleme"}
+                onTamamla={() => {
+                    if (!kanitEkrani)
+                        return;
+
+                    if (kanitEkrani.mod === "yukleme")
+                        yuklemeyiTamamla(kanitEkrani.ambarVoyageId, kanitEkrani.ambarId);
+                    else
+                        teslimiTamamla(kanitEkrani.ambarVoyageId, kanitEkrani.ambarId);
+                }}
+                onKapat={() => setKanitEkrani(undefined)}
+            />
         </Layout >
     );
 }

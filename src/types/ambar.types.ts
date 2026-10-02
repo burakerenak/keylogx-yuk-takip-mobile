@@ -338,10 +338,41 @@ export interface AmbarSetDeliveryDateResponse {
 
 }
 
+export interface AmbarAddFileArchiveRequest {
+    ambarId: string
+    fileTypeId: string
+    b64: string
+    description?: string
+}
+
+export interface AmbarAddFileArchiveResponse {
+    fileArchiveId: string
+    fileTypeId: string | undefined
+    fileTypeName: string | undefined
+    fileName: string
+    url: string
+}
+
+export interface AmbarDeleteFileArchiveRequest {
+    ambarId: string
+    fileArchiveId: string
+}
+
+export interface AmbarFileArchiveListItem {
+    fileArchiveId: string
+    fileTypeId: string | undefined
+    fileTypeName: string | undefined
+    /** Evrak turunun kodu; kutular koda gore eslesir, ada gore degil. */
+    fileTypeKey: string | undefined
+    fileName: string
+    url: string
+    description: string | undefined
+}
+
 export interface AmbarSetDeliveryEndDateRequest {
     ambarId: string
-    b64: string
-    fileTypeId: string
+    b64?: string
+    fileTypeId?: string
     lat: number | undefined
     lon: number | undefined
 }

@@ -1,6 +1,6 @@
 import { api } from './client';
 import { ApiResponse } from '../types/api.types';
-import { AmbarSetDeliveryDateRequest, AmbarSetDeliveryDateResponse, AmbarSetDeliveryEndDateRequest, AmbarSetDeliveryEndDateResponse, AmbarSetLoadDateRequest, AmbarSetLoadDateResponse, AmbarSetLoadEndDateRequest, AmbarSetLoadEndDateResponse, GetAmbarByIdRequest, GetAmbarByIdResponse, GetAmbarListRequest, GetAmbarListResponse, UpdateAmbarProductRequest, UpdateAmbarProductResponse } from '../types/ambar.types';
+import { AmbarAddFileArchiveRequest, AmbarAddFileArchiveResponse, AmbarDeleteFileArchiveRequest, AmbarFileArchiveListItem, AmbarSetDeliveryDateRequest, AmbarSetDeliveryDateResponse, AmbarSetDeliveryEndDateRequest, AmbarSetDeliveryEndDateResponse, AmbarSetLoadDateRequest, AmbarSetLoadDateResponse, AmbarSetLoadEndDateRequest, AmbarSetLoadEndDateResponse, GetAmbarByIdRequest, GetAmbarByIdResponse, GetAmbarListRequest, GetAmbarListResponse, UpdateAmbarProductRequest, UpdateAmbarProductResponse } from '../types/ambar.types';
 import { Alert } from 'react-native';
 
 export const getAmbarList = async (
@@ -61,4 +61,29 @@ export const ambarSetDeliveryEndDate = async (
 
     Alert.alert(res.data.message ?? '');
     return res.data.data; // 👈 burada type-safe
+};
+/** Tek fotograf yukler. Fotograf cekilir cekilmez gonderilir; sahada baglanti zayif. */
+export const ambarAddFileArchive = async (
+    body: AmbarAddFileArchiveRequest
+): Promise<AmbarAddFileArchiveResponse> => {
+    const res = await api.post<ApiResponse<AmbarAddFileArchiveResponse>>('/Ambar/AmbarAddFileArchive', body);
+
+    return res.data.data;
+};
+
+export const ambarDeleteFileArchive = async (
+    body: AmbarDeleteFileArchiveRequest
+): Promise<boolean> => {
+    const res = await api.post<ApiResponse<boolean>>('/Ambar/AmbarDeleteFileArchive', body);
+
+    return res.data.data;
+};
+
+/** Siparisin fotograflari; ekran kapanip acildiginda kutular doluyla acilsin. */
+export const getAmbarFileArchives = async (
+    _ambarId: string
+): Promise<AmbarFileArchiveListItem[]> => {
+    const res = await api.post<ApiResponse<AmbarFileArchiveListItem[]>>('/Ambar/GetAmbarFileArchives', { id: _ambarId });
+
+    return res.data.data;
 };
