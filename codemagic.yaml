@@ -8,7 +8,7 @@
 #   2. Team settings > codemagic.yaml settings > Code signing identities:
 #      - iOS certificates: App Store dagitim sertifikasi (Generate certificate).
 #      - iOS provisioning profiles: com.ebbedev.cargotrackingmobileios icin App Store profili (Fetch profiles).
-#   3. Asagidaki APP_STORE_APPLE_ID: App Store Connect > uygulama > App Information > Apple ID (rakam).
+#   3. APP_STORE_APPLE_ID = 6813461471 (SKU keylogx-yuk-takip).
 workflows:
   ios-testflight:
     name: iOS — TestFlight
@@ -23,7 +23,7 @@ workflows:
       vars:
         XCODE_WORKSPACE: ios/EbbeDevDriverMobile.xcworkspace
         XCODE_SCHEME: EbbeDevDriverMobile
-        APP_STORE_APPLE_ID: "0000000000" # App Store Connect'te uygulama acilinca gercek deger yazilacak
+        APP_STORE_APPLE_ID: "6813461471" # App Store Connect > Keylogx Yuk Takip > App Information > Apple ID
       node: 22
       xcode: latest
       cocoapods: default
