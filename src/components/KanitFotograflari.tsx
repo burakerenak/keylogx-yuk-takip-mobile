@@ -12,6 +12,7 @@ import {
     View,
 } from 'react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PERMISSIONS, RESULTS, check, request } from 'react-native-permissions';
 import { ambarAddFileArchive, ambarDeleteFileArchive, getAmbarFileArchives } from '../api/ambar';
 import { getConstantList } from '../api/constant';
@@ -68,6 +69,12 @@ interface Props {
 
 const KanitFotograflari = ({ isShown, ambarId, mod, onTamamla, onKapat }: Props) => {
     const kutular = mod === 'yukleme' ? YUKLEME_KUTULARI : TESLIM_KUTULARI;
+
+    // iOS'ta tam sayfa Modal ekranin en ustunden baslar; baslik ve alt dugme guvenli alan kadar iceri alinir.
+    // Android'de Modal durum cubugunun altinda acildigi icin ek pay verilmez (cift bosluk olmasin).
+    const insets = useSafeAreaInsets();
+    const ustPay = Platform.OS === 'ios' ? insets.top : 0;
+    const altPay = Platform.OS === 'ios' ? insets.bottom : 0;
 
     const [dosyalar, setDosyalar] = useState<AmbarFileArchiveListItem[]>([]);
     const [turler, setTurler] = useState<{ constantId: string, additionalValue1: string }[]>([]);
@@ -234,7 +241,7 @@ const KanitFotograflari = ({ isShown, ambarId, mod, onTamamla, onKapat }: Props)
     return (
         <Modal visible={isShown} animationType="slide" onRequestClose={kapatmayiDene}>
             <View style={s.sayfa}>
-                <View style={s.baslik}>
+                <View style={[s.baslik, { paddingTop: 14 + ustPay }]}>
                     <TouchableOpacity onPress={kapatmayiDene} style={s.geri}>
                         <Text style={s.geriYazi}>‹</Text>
                     </TouchableOpacity>
@@ -320,7 +327,7 @@ const KanitFotograflari = ({ isShown, ambarId, mod, onTamamla, onKapat }: Props)
                     }
                 </ScrollView>
 
-                <View style={s.alt}>
+                <View style={[s.alt, { paddingBottom: 14 + altPay }]}>
                     <Text style={s.durum}>
                         {
                             eksikZorunlular.length > 0
