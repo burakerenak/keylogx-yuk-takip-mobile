@@ -6,6 +6,8 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleDisplayName</key>
 	<string>Keylogx Yük Takip</string>
 	<key>CFBundleExecutable</key>
@@ -39,6 +41,8 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Kamera, belge ve fotoğraf çekebilmek için kullanılmaktadır.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Konumunuz yalnızca uygulama açıkken, yükleme ve teslim kayıtlarında kullanılır. Uygulama arka planda konumunuzu almaz.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Konumunuzu kullanarak teslimat ve navigasyon işlemlerini gerçekleştirebilmek için konum izni gereklidir.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

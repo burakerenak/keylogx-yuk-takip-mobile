@@ -1,0 +1,55 @@
+# Codemagic bulut derlemesi — iOS (Keylogx Yuk Takip)
+#
+# Bu makinede (Windows) iOS derlenemedigi icin derleme Codemagic'in Mac makinesinde yapilir ve
+# TestFlight'a yuklenir. Derleme elle baslatilir (Codemagic > uygulama > Start new build).
+#
+# On kosullar (Codemagic ekraninda, bir kez):
+#   1. Team settings > Integrations > Developer Portal: App Store Connect API anahtari "Keylogx ASC" adiyla.
+#   2. Team settings > codemagic.yaml settings > Code signing identities:
+#      - iOS certificates: App Store dagitim sertifikasi (Generate certificate).
+#      - iOS provisioning profiles: com.ebbedev.cargotrackingmobileios icin App Store profili (Fetch profiles).
+#   3. APP_STORE_APPLE_ID = 6813461471 (SKU keylogx-yuk-takip).
+workflows:
+  ios-testflight:
+    name: iOS — TestFlight
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Keylogx ASC
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.ebbedev.cargotrackingmobileios
+      vars:
+        XCODE_WORKSPACE: ios/EbbeDevDriverMobile.xcworkspace
+        XCODE_SCHEME: EbbeDevDriverMobile
+        APP_STORE_APPLE_ID: "6813461471" # App Store Connect > Keylogx Yuk Takip > App Information > Apple ID
+      node: 22
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Paketleri kur
+        script: npm ci
+      - name: CocoaPods kur
+        script: cd ios && pod install
+      - name: Imza profillerini projeye uygula
+        script: xcode-project use-profiles
+      - name: Derleme numarasini artir
+        script: |
+          # TestFlight'taki son derleme numarasinin bir fazlasi; hic derleme yoksa 1.
+          SON=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          cd ios && agvtool new-version -all $((SON + 1))
+      - name: IPA derle
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        # Dis test (Beta App Review) ve App Store gonderimi App Store Connect ekranindan elle yapilir;
+        # ic test grubu (Ebbedev) yeni derlemeleri kendiliginden alir.
+        submit_to_testflight: false
