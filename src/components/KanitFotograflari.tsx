@@ -8,6 +8,7 @@ import {
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View,
 } from 'react-native';
@@ -25,6 +26,9 @@ import { theme } from '../theme/theme';
  * Dört kutu: zorunlu kanıt + üç isteğe bağlı evrak. Fotoğraf çekilir çekilmez
  * sunucuya yüklenir; dördünü sonda tek pakette göndermek sahada bağlantı
  * zayıfken riskli. Zorunlu kanıt çekilmeden ekrandan çıkılamaz.
+ *
+ * 4.3 (09.10.2026, Burak): fotoğraflardan ÖNCE kişi sorulur — yüklemede "Teslim Eden", teslimde "Teslim Alan";
+ * ikisi de boş gelir ve zorunludur. Girilen ad siparişin web ekranındaki aynı alana yazılır.
  */
 
 /** AMBAR_FILE_TYPE kodları. Tür adı değişse de kutular bozulmasın diye KOD kullanılır. */
@@ -63,7 +67,8 @@ interface Props {
     isShown: boolean
     ambarId: string | undefined
     mod: 'yukleme' | 'teslim'
-    onTamamla: () => void
+    /** kisi: yuklemede Teslim Eden, teslimde Teslim Alan (bos olamaz). */
+    onTamamla: (kisi: string) => void
     onKapat: () => void
 }
 
@@ -81,9 +86,20 @@ const KanitFotograflari = ({ isShown, ambarId, mod, onTamamla, onKapat }: Props)
     const [yukleniyor, setYukleniyor] = useState(false);
     const [islemdekiKod, setIslemdekiKod] = useState<string | undefined>(undefined);
 
+    // 1. adim kisi (Teslim Eden / Teslim Alan), 2. adim fotograflar.
+    const [adim, setAdim] = useState<'kisi' | 'foto'>('kisi');
+    const [kisi, setKisi] = useState('');
+    const kisiEtiketi = mod === 'yukleme' ? 'Teslim Eden' : 'Teslim Alan';
+    const vurgu = mod === 'yukleme' ? theme.colors.blue : theme.colors.teal;
+
     useEffect(() => {
         if (isShown && ambarId)
             ilkYukleme(ambarId);
+
+        if (isShown) {
+            setAdim('kisi');
+            setKisi('');
+        }
     }, [isShown, ambarId]);
 
     const ilkYukleme = async (_ambarId: string) => {
@@ -236,18 +252,83 @@ const KanitFotograflari = ({ isShown, ambarId, mod, onTamamla, onKapat }: Props)
         );
     };
 
-    const baslik = mod === 'yukleme' ? 'Yükleme Kanıtı' : 'Teslim Kanıtı';
+    const baslik = adim === 'kisi' ? (mod === 'yukleme' ? 'Yükleme Yapıldı' : 'Teslim Et') : (mod === 'yukleme' ? 'Yükleme Kanıtı' : 'Teslim Kanıtı');
+
+    // 2. adimda geri tusu 1. adima doner; 1. adimda cikis kilidi (zorunlu fotograf) aynen gecerli.
+    const geriBas = () => {
+        if (adim === 'foto') {
+            setAdim('kisi');
+            return;
+        }
+
+        kapatmayiDene();
+    };
+
+    const tamamTonu = mod === 'yukleme' ? theme.colors.blueDark : theme.colors.greenDark;
+    const tamamZemin = mod === 'yukleme' ? theme.colors.blueSoft : theme.colors.greenSoft;
 
     return (
-        <Modal visible={isShown} animationType="slide" onRequestClose={kapatmayiDene}>
+        <Modal visible={isShown} animationType="slide" onRequestClose={geriBas}>
             <View style={s.sayfa}>
-                <View style={[s.baslik, { paddingTop: 14 + ustPay }]}>
-                    <TouchableOpacity onPress={kapatmayiDene} style={s.geri}>
+                <View style={[s.baslik, { paddingTop: 10 + ustPay }]}>
+                    <TouchableOpacity onPress={geriBas} style={s.geri} accessibilityLabel="Geri">
                         <Text style={s.geriYazi}>‹</Text>
                     </TouchableOpacity>
                     <Text style={s.baslikYazi}>{baslik}</Text>
                 </View>
 
+                <View style={s.adimlar}>
+                    {
+                        adim === 'kisi'
+                            ? <View style={[s.adimNo, { backgroundColor: vurgu }]}><Text style={s.adimNoYazi}>1</Text></View>
+                            : <View style={[s.adimNo, { backgroundColor: tamamZemin }]}><Text style={[s.adimNoYazi, { color: tamamTonu }]}>✓</Text></View>
+                    }
+                    <Text style={[s.adimYazi, adim === 'foto' ? { color: tamamTonu } : null]} numberOfLines={1}>
+                        {adim === 'kisi' ? kisiEtiketi : kisiEtiketi + ': ' + kisi.trim()}
+                    </Text>
+                    <View style={[s.adimCizgi, adim === 'foto' ? { backgroundColor: vurgu } : null]} />
+                    <View style={[s.adimNo, { backgroundColor: adim === 'foto' ? vurgu : theme.colors.border }]}>
+                        <Text style={[s.adimNoYazi, adim === 'foto' ? null : { color: theme.colors.muted }]}>2</Text>
+                    </View>
+                    <Text style={[s.adimYazi, adim === 'foto' ? null : { color: theme.colors.muted, fontWeight: '600' }]}>Fotoğraflar</Text>
+                </View>
+
+                {
+                    adim === 'kisi' && (
+                        <React.Fragment>
+                            <ScrollView contentContainerStyle={s.kisiGovde} keyboardShouldPersistTaps="handled">
+                                <Text style={s.soru}>{mod === 'yukleme' ? 'Yükü kim teslim etti?' : 'Yükü kim teslim aldı?'}</Text>
+                                <Text style={s.soruAlt}>
+                                    {mod === 'yukleme' ? 'Yükü size veren kişinin' : 'Yükü teslim alan kişinin'} adı soyadı siparişin "{kisiEtiketi}" alanına yazılır.
+                                </Text>
+                                <Text style={s.kisiEtiket}>{kisiEtiketi} <Text style={{ color: theme.colors.red }}>*</Text></Text>
+                                <TextInput
+                                    value={kisi}
+                                    onChangeText={setKisi}
+                                    placeholder="Ad soyad"
+                                    placeholderTextColor={theme.colors.placeholder}
+                                    autoCapitalize="words"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => { if (kisi.trim()) setAdim('foto'); }}
+                                    style={[s.kisiKutu, { borderColor: kisi.trim() ? vurgu : '#E4A0A0' }]}
+                                />
+                                {!kisi.trim() && <Text style={s.kisiHata}>{mod === 'yukleme' ? 'Yükü teslim eden kişinin adını girin.' : 'Teslim alan kişinin adını girin.'}</Text>}
+                            </ScrollView>
+
+                            <View style={[s.alt, { paddingBottom: 14 + altPay }]}>
+                                <TouchableOpacity
+                                    style={[s.tamamla, { backgroundColor: vurgu }, !kisi.trim() ? s.tamamlaPasif : null]}
+                                    disabled={!kisi.trim()}
+                                    onPress={() => setAdim('foto')}
+                                >
+                                    <Text style={s.tamamlaYazi}>Devam: Fotoğraf Çek</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </React.Fragment>
+                    )
+                }
+
+                {adim === 'foto' && (<React.Fragment>
                 <ScrollView contentContainerStyle={s.govde}>
                     <View style={s.uyari}>
                         <Text style={s.uyariYazi}>
@@ -337,26 +418,38 @@ const KanitFotograflari = ({ isShown, ambarId, mod, onTamamla, onKapat }: Props)
                     </Text>
 
                     <TouchableOpacity
-                        style={[s.tamamla, eksikZorunlular.length > 0 ? s.tamamlaPasif : null]}
+                        style={[s.tamamla, { backgroundColor: vurgu }, eksikZorunlular.length > 0 ? s.tamamlaPasif : null]}
                         disabled={eksikZorunlular.length > 0}
-                        onPress={onTamamla}
+                        onPress={() => onTamamla(kisi.trim())}
                     >
                         <Text style={s.tamamlaYazi}>
                             {mod === 'yukleme' ? 'Yüklemeyi Tamamla' : 'Teslimi Tamamla'}
                         </Text>
                     </TouchableOpacity>
                 </View>
+                </React.Fragment>)}
             </View>
         </Modal>
     );
 };
 
 const s = StyleSheet.create({
-    sayfa: { flex: 1, backgroundColor: theme.colors.white },
-    baslik: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.blue, paddingVertical: 14, paddingHorizontal: 12 },
-    geri: { paddingHorizontal: 8, paddingVertical: 2 },
-    geriYazi: { color: theme.colors.white, fontSize: 26, lineHeight: 28 },
-    baslikYazi: { color: theme.colors.white, fontSize: 17, fontWeight: '700', marginLeft: 4 },
+    sayfa: { flex: 1, backgroundColor: theme.colors.bg },
+    baslik: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.white, paddingVertical: 10, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+    geri: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    geriYazi: { color: theme.colors.ink, fontSize: 30, lineHeight: 32 },
+    baslikYazi: { color: theme.colors.ink, fontSize: 18, fontWeight: '700', marginLeft: 2 },
+    adimlar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: theme.colors.white },
+    adimNo: { width: 28, height: 28, borderRadius: 99, alignItems: 'center', justifyContent: 'center' },
+    adimNoYazi: { color: theme.colors.white, fontSize: 14, fontWeight: '700' },
+    adimYazi: { fontSize: 14, fontWeight: '700', color: theme.colors.ink, flexShrink: 1 },
+    adimCizgi: { flex: 1, minWidth: 16, height: 2, backgroundColor: '#D5DAE3' },
+    kisiGovde: { padding: 20, gap: 10 },
+    soru: { fontSize: 22, fontWeight: '700', color: theme.colors.ink },
+    soruAlt: { fontSize: 15, color: theme.colors.muted, lineHeight: 21 },
+    kisiEtiket: { fontSize: 14, fontWeight: '600', color: theme.colors.ink, marginTop: 14 },
+    kisiKutu: { height: 54, borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 16, fontSize: 17, color: theme.colors.ink, backgroundColor: theme.colors.white },
+    kisiHata: { fontSize: 13, color: theme.colors.red },
     govde: { padding: 14, paddingBottom: 30 },
     uyari: { backgroundColor: '#fff4de', borderRadius: 8, padding: 12, marginBottom: 14 },
     uyariYazi: { color: '#7a5c00', fontSize: 13, lineHeight: 19 },
@@ -388,9 +481,9 @@ const s = StyleSheet.create({
     etiketYazi: { color: theme.colors.white, fontSize: 11, fontWeight: '600' },
     alt: { borderTopWidth: 1, borderTopColor: theme.colors.border, padding: 14, backgroundColor: theme.colors.white },
     durum: { fontSize: 12.5, color: theme.colors.muted, textAlign: 'center', marginBottom: 10 },
-    tamamla: { backgroundColor: theme.colors.green, borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
+    tamamla: { backgroundColor: theme.colors.green, borderRadius: 14, minHeight: 54, justifyContent: 'center', alignItems: 'center' },
     tamamlaPasif: { backgroundColor: '#d9dce4' },
-    tamamlaYazi: { color: theme.colors.white, fontSize: 15, fontWeight: '700' },
+    tamamlaYazi: { color: theme.colors.white, fontSize: 17, fontWeight: '700' },
 });
 
 export default KanitFotograflari;

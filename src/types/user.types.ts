@@ -33,3 +33,12 @@ export type UpdateFirebaseTokenRequest = {
 
 export type UpdateFirebaseTokenResponse = {
 }
+export interface GetMyProfileResponse {
+    nameSurname?: string | null
+    username?: string | null
+    email?: string | null
+    phone?: string | null
+    companyName?: string | null
+    driverName?: string | null
+    driverPhone?: string | null
+}
