@@ -380,6 +380,9 @@ export interface AmbarSetDeliveryEndDateRequest {
     fileTypeId?: string
     lat: number | undefined
     lon: number | undefined
+    /** 4.3 (09.10.2026): teslimde girilen Teslim Eden / Teslim Alan; siparisin web ekranina yazilir. */
+    shippingDeliverer?: string
+    shippingReceiver?: string
 }
 
 export interface AmbarSetDeliveryEndDateResponse {

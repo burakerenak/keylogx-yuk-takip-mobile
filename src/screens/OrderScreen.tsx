@@ -18,7 +18,7 @@ import { saveAsDraftIrsaliye } from '../api/uyumsoft';
 import { Alert, Linking, PermissionsAndroid, Platform } from 'react-native';
 import Card from '../components/Card';
 import { ambarSetDeliveryDate, ambarSetDeliveryEndDate, ambarSetLoadDate, ambarSetLoadEndDate } from '../api/ambar';
-import KanitFotograflari from '../components/KanitFotograflari';
+import KanitFotograflari, { TeslimKisileri } from '../components/KanitFotograflari';
 import Geolocation from '@react-native-community/geolocation';
 import { check, PERMISSIONS, request, RESULTS } from 'react-native-permissions';
 
@@ -126,11 +126,17 @@ export default function OrderScreen() {
         );
     };
 
-    const teslimiTamamla = async (_ambarVoyageId: string, _ambarId: string) => {
+    const teslimiTamamla = async (_ambarVoyageId: string, _ambarId: string, _teslim?: TeslimKisileri) => {
         var location = await getCurrentLocation();
 
-        // Fotograflar onceden tek tek yuklendi; bu cagriya b64 gonderilmez.
-        var yanit = await ambarSetDeliveryEndDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude });
+        // Fotograflar onceden tek tek yuklendi; bu cagriya b64 gonderilmez. Teslim Eden / Alan siparise yazilir (4.3).
+        var yanit = await ambarSetDeliveryEndDate({
+            ambarId: _ambarId,
+            lat: location?.latitude,
+            lon: location?.longitude,
+            shippingDeliverer: _teslim?.teslimEden || undefined,
+            shippingReceiver: _teslim?.teslimAlan || undefined,
+        });
 
         setKanitEkrani(undefined);
         onGetAmbarVoyageById(_ambarVoyageId);
@@ -446,14 +452,14 @@ export default function OrderScreen() {
                 isShown={kanitEkrani !== undefined}
                 ambarId={kanitEkrani?.ambarId}
                 mod={kanitEkrani?.mod ?? "yukleme"}
-                onTamamla={() => {
+                onTamamla={(teslim) => {
                     if (!kanitEkrani)
                         return;
 
                     if (kanitEkrani.mod === "yukleme")
                         yuklemeyiTamamla(kanitEkrani.ambarVoyageId, kanitEkrani.ambarId);
                     else
-                        teslimiTamamla(kanitEkrani.ambarVoyageId, kanitEkrani.ambarId);
+                        teslimiTamamla(kanitEkrani.ambarVoyageId, kanitEkrani.ambarId, teslim);
                 }}
                 onKapat={() => setKanitEkrani(undefined)}
             />

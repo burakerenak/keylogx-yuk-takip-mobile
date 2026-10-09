@@ -8,6 +8,7 @@ import {
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View,
 } from 'react-native';
@@ -18,6 +19,13 @@ import { ambarAddFileArchive, ambarDeleteFileArchive, getAmbarFileArchives } fro
 import { getConstantList } from '../api/constant';
 import { AmbarFileArchiveListItem } from '../types/ambar.types';
 import { theme } from '../theme/theme';
+import { useAuthStore } from '../store/authStore';
+
+/** Teslimde girilen kisiler (4.3): Teslim Eden surucunun adiyla dolu gelir, Teslim Alan zorunlu. */
+export interface TeslimKisileri {
+    teslimEden: string
+    teslimAlan: string
+}
 
 /**
  * Yükleme ve teslim sonrası kanıt fotoğrafı ekranı.
@@ -63,7 +71,7 @@ interface Props {
     isShown: boolean
     ambarId: string | undefined
     mod: 'yukleme' | 'teslim'
-    onTamamla: () => void
+    onTamamla: (teslim?: TeslimKisileri) => void
     onKapat: () => void
 }
 
@@ -77,6 +85,9 @@ const KanitFotograflari = ({ isShown, ambarId, mod, onTamamla, onKapat }: Props)
     const altPay = Platform.OS === 'ios' ? insets.bottom : 0;
 
     const [dosyalar, setDosyalar] = useState<AmbarFileArchiveListItem[]>([]);
+    const kullanici = useAuthStore(x => x.user);
+    const [teslimEden, setTeslimEden] = useState('');
+    const [teslimAlan, setTeslimAlan] = useState('');
     const [turler, setTurler] = useState<{ constantId: string, additionalValue1: string }[]>([]);
     const [yukleniyor, setYukleniyor] = useState(false);
     const [islemdekiKod, setIslemdekiKod] = useState<string | undefined>(undefined);
@@ -84,6 +95,12 @@ const KanitFotograflari = ({ isShown, ambarId, mod, onTamamla, onKapat }: Props)
     useEffect(() => {
         if (isShown && ambarId)
             ilkYukleme(ambarId);
+
+        // Her teslim icin bastan: Teslim Eden surucunun adi, Teslim Alan bos.
+        if (isShown) {
+            setTeslimEden(kullanici?.driverName || kullanici?.nameSurname || '');
+            setTeslimAlan('');
+        }
     }, [isShown, ambarId]);
 
     const ilkYukleme = async (_ambarId: string) => {
@@ -111,6 +128,8 @@ const KanitFotograflari = ({ isShown, ambarId, mod, onTamamla, onKapat }: Props)
     const kutununDosyalari = (_kod: string) => dosyalar.filter(x => x.fileTypeKey === _kod);
 
     const eksikZorunlular = kutular.filter(k => k.zorunlu && kutununDosyalari(k.kod).length === 0);
+    const teslimAlanEksik = mod === 'teslim' && teslimAlan.trim() === '';
+    const eksikler = [...eksikZorunlular.map(x => x.ad), ...(teslimAlanEksik ? ['Teslim Alan'] : [])];
 
     const izinIste = async (_kamera: boolean) => {
         const izin = _kamera
@@ -325,21 +344,46 @@ const KanitFotograflari = ({ isShown, ambarId, mod, onTamamla, onKapat }: Props)
                                 </View>
                             )
                     }
+                    {
+                        mod === 'teslim' && !yukleniyor && (
+                            <View style={s.kisiler}>
+                                <Text style={s.kisiEtiket}>Teslim Eden</Text>
+                                <TextInput
+                                    style={s.kisiKutu}
+                                    value={teslimEden}
+                                    onChangeText={setTeslimEden}
+                                    placeholder="Teslim eden kişinin adı soyadı"
+                                    placeholderTextColor={theme.colors.placeholder}
+                                    autoCapitalize="words"
+                                />
+
+                                <Text style={[s.kisiEtiket, { marginTop: 12 }]}>Teslim Alan *</Text>
+                                <TextInput
+                                    style={[s.kisiKutu, teslimAlanEksik ? s.kisiKutuZorunlu : null]}
+                                    value={teslimAlan}
+                                    onChangeText={setTeslimAlan}
+                                    placeholder="Teslim alan kişinin adı soyadı"
+                                    placeholderTextColor={theme.colors.placeholder}
+                                    autoCapitalize="words"
+                                />
+                            </View>
+                        )
+                    }
                 </ScrollView>
 
                 <View style={[s.alt, { paddingBottom: 14 + altPay }]}>
                     <Text style={s.durum}>
                         {
-                            eksikZorunlular.length > 0
-                                ? `Eksik: ${eksikZorunlular.map(x => x.ad).join(', ')}`
+                            eksikler.length > 0
+                                ? `Eksik: ${eksikler.join(', ')}`
                                 : `${dosyalar.length} fotoğraf eklendi`
                         }
                     </Text>
 
                     <TouchableOpacity
-                        style={[s.tamamla, eksikZorunlular.length > 0 ? s.tamamlaPasif : null]}
-                        disabled={eksikZorunlular.length > 0}
-                        onPress={onTamamla}
+                        style={[s.tamamla, eksikler.length > 0 ? s.tamamlaPasif : null]}
+                        disabled={eksikler.length > 0}
+                        onPress={() => onTamamla(mod === 'teslim' ? { teslimEden: teslimEden.trim(), teslimAlan: teslimAlan.trim() } : undefined)}
                     >
                         <Text style={s.tamamlaYazi}>
                             {mod === 'yukleme' ? 'Yüklemeyi Tamamla' : 'Teslimi Tamamla'}
@@ -361,6 +405,10 @@ const s = StyleSheet.create({
     uyari: { backgroundColor: '#fff4de', borderRadius: 8, padding: 12, marginBottom: 14 },
     uyariYazi: { color: '#7a5c00', fontSize: 13, lineHeight: 19 },
     kalin: { fontWeight: '700' },
+    kisiler: { marginTop: 18 },
+    kisiEtiket: { color: theme.colors.ink, fontSize: 14, fontWeight: '600', marginBottom: 6 },
+    kisiKutu: { borderWidth: 1, borderColor: theme.colors.border, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, color: theme.colors.ink, backgroundColor: theme.colors.white },
+    kisiKutuZorunlu: { borderColor: theme.colors.red },
     izgara: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
     kutu: {
         width: '48%', aspectRatio: 1, borderRadius: 12, borderWidth: 2, borderStyle: 'dashed',
