@@ -14,6 +14,30 @@ import { formatWeight, sum, toNumber } from "../utils/numberUtils";
 import { getDistanceKm } from "../utils/commonUtils";
 import ScrollView from "../components/ScrollView";
 import Button from "../components/Button";
+import { Phone } from "lucide-react-native";
+import { telefonAra, telefonAramaAdresi } from "../utils/telefon";
+
+/** Firma bilgisinin altinda yetkili ad soyad ve telefonu; telefona dokununca arama acilir (09.10.2026). */
+const FirmaYetkilisi = ({ adSoyad, telefon }: { adSoyad?: string | null, telefon?: string | null }) => {
+    if (!adSoyad && !telefon)
+        return null;
+
+    const aranabilir = !!telefonAramaAdresi(telefon);
+
+    return (
+        <Box mt={6}>
+            {adSoyad ? <Text fontSize={theme.fontSizes.xs} color={theme.colors.ink}>Yetkili: {adSoyad}</Text> : null}
+            <Box mt={4} flexDirection="row" alignItems="center" onPress={aranabilir ? () => telefonAra(telefon) : undefined}>
+                {aranabilir && (
+                    <Box mr={6} width={26} height={26} borderRadius={99} bg={theme.colors.green} alignItems="center" justifyContent="center">
+                        <Phone size={14} color={theme.colors.white} />
+                    </Box>
+                )}
+                <Text fontSize={theme.fontSizes.sm} fontWeight="600" color={aranabilir ? theme.colors.blue : theme.colors.muted}>{telefon || "Telefon: —"}</Text>
+            </Box>
+        </Box>
+    )
+}
 
 const DetailScreen = () => {
     const route = useRoute<RouteProp<AppStackParamList, 'Detail'>>();
@@ -52,6 +76,7 @@ const DetailScreen = () => {
                                         <Text fontWeight='600' fontSize={theme.fontSizes.sm} color={theme.colors.ink}>{data.loadingFirmCustomerName}</Text>
                                         <Text fontSize={theme.fontSizes.xs} color={theme.colors.muted}>{data.loadingFirmCustomerAddressText}</Text>
                                         <Text fontSize={theme.fontSizes.xs} color={theme.colors.muted}>{data.loadingCountyName} • {data.loadingDistrictName}</Text>
+                                        <FirmaYetkilisi adSoyad={data.loadingFirmAuthorizedPersonName} telefon={data.loadingFirmAuthorizedPersonPhone} />
                                     </Box>
                                 </Box>
                                 <Box flexDirection='row'>
@@ -63,6 +88,7 @@ const DetailScreen = () => {
                                         <Text fontWeight='600' fontSize={theme.fontSizes.sm} color={theme.colors.ink}>{data.deliverFirmCustomerName}</Text>
                                         <Text fontSize={theme.fontSizes.xs} color={theme.colors.muted}>{data.deliverFirmCustomerAddressText}</Text>
                                         <Text fontSize={theme.fontSizes.xs} color={theme.colors.muted}>{data.deliverCountyName} • {data.deliverDistrictName}</Text>
+                                        <FirmaYetkilisi adSoyad={data.deliverFirmAuthorizedPersonName} telefon={data.deliverFirmAuthorizedPersonPhone} />
                                     </Box>
                                 </Box>
                             </Card>
