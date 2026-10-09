@@ -194,6 +194,11 @@ export type GetAmbarByIdResponse = {
     deliverFirmCustomerAddressText: string
     deliverFirmCustomerName: string
     deliverFirmCustomerAddressTypeName: string
+    /** Firma yetkilisi (tek aktif yetkili ya da en son kaydedilen) ve telefonu; yalniz GetAmbarById doldurur (09.10.2026). */
+    loadingFirmAuthorizedPersonName?: string | null
+    loadingFirmAuthorizedPersonPhone?: string | null
+    deliverFirmAuthorizedPersonName?: string | null
+    deliverFirmAuthorizedPersonPhone?: string | null
     loadingCountyId: string
     loadingDistrictId: string
     loadingNeighborhoodId: any
