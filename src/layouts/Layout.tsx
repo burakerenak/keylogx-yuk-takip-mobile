@@ -10,6 +10,7 @@ import { ChevronLeft, CircleChevronLeft, XIcon } from "lucide-react-native";
 import { useSinglePickerStore } from "../store/singlePickerStore";
 import ScrollView from "../components/ScrollView";
 import Toast from "react-native-toast-message";
+import { StatusBar } from "react-native";
 
 interface Props {
     children: any
@@ -29,7 +30,9 @@ const Layout = ({ canGoBack = false, titleTextAlign = 'left', hasPadding = true,
 
     return (
         <React.Fragment>
-            <SafeAreaView style={{ backgroundColor: '#1253dd' }} edges={['top']} />
+            {/* 4.3: ic ekranlar beyaz baslikli, koyu yazili (09.10.2026). */}
+            <StatusBar barStyle="dark-content" backgroundColor={theme.colors.white} />
+            <SafeAreaView style={{ backgroundColor: theme.colors.white }} edges={['top']} />
 
             <Box zIndex={999999999}>
                 <Toast topOffset={15} />
@@ -38,14 +41,14 @@ const Layout = ({ canGoBack = false, titleTextAlign = 'left', hasPadding = true,
             {
                 isSinglePickerShown && (
                     <Box flex={1} bg={theme.colors.bg}>
-                        <Box height={60} bg={theme.colors.blue} justifyContent="center">
+                        <Box height={60} bg={theme.colors.white} borderBottomWidth={1} borderColor={theme.colors.border} justifyContent="center">
                             <Box flexDirection="row" pl={15} pr={15}>
                                 <Box pr={15} onPress={hideSinglePicker} justifyContent="center">
-                                    <XIcon size={theme.fontSizes['3xl']} color={theme.colors.white} />
+                                    <XIcon size={theme.fontSizes['3xl']} color={theme.colors.ink} />
                                 </Box>
 
                                 <Box flexGrow={1} justifyContent="center">
-                                    <Text textAlign={titleTextAlign} fontWeight='bold' fontSize={theme.fontSizes.lg} color={theme.colors.white}>{singlePickerTitle}</Text>
+                                    <Text textAlign={titleTextAlign} fontWeight='bold' fontSize={theme.fontSizes.lg} color={theme.colors.ink}>{singlePickerTitle}</Text>
                                 </Box>
                             </Box>
                         </Box>
@@ -66,17 +69,17 @@ const Layout = ({ canGoBack = false, titleTextAlign = 'left', hasPadding = true,
             {
                 !isSinglePickerShown && (
                     <React.Fragment>
-                        <Box height={60} bg={theme.colors.blue} justifyContent="center">
+                        <Box height={60} bg={theme.colors.white} borderBottomWidth={1} borderColor={theme.colors.border} justifyContent="center">
                             <Box flexDirection="row" pl={15} pr={15}>
                                 {
                                     (canGoBack == true) && (
                                         <Box pr={15} onPress={() => navigation.goBack()} justifyContent="center">
-                                            <ChevronLeft size={theme.fontSizes['3xl']} color={theme.colors.white} />
+                                            <ChevronLeft size={theme.fontSizes['3xl']} color={theme.colors.ink} />
                                         </Box>
                                     )
                                 }
                                 <Box flexGrow={1} justifyContent="center">
-                                    <Text textAlign={titleTextAlign} fontWeight='bold' fontSize={theme.fontSizes.lg} color={theme.colors.white}>{title}</Text>
+                                    <Text textAlign={titleTextAlign} fontWeight='bold' fontSize={theme.fontSizes.lg} color={theme.colors.ink}>{title}</Text>
                                 </Box>
                             </Box>
                         </Box>

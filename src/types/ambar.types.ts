@@ -173,6 +173,8 @@ export type GetAmbarByIdResponse = {
     ambarVoyage?: GetAmbarByIdResponseAmbarVoyage
     orderDate: string
     loadDate: any
+    /** Yukleme noktasina varis zamani (dd.MM.yyyy HH:mm). */
+    loadDateStr?: string
     deliveryDate: any
     senderCustomerId: any
     senderCustomerAddressTypeId: any
@@ -327,6 +329,8 @@ export interface AmbarSetLoadEndDateRequest {
     ambarId: string
     lat: number | undefined
     lon: number | undefined
+    /** 4.3: yuklemede yuku teslim eden kisi (siparisin Teslim Eden alani). */
+    shippingDeliverer?: string
 }
 
 export interface AmbarSetLoadEndDateResponse {
@@ -380,6 +384,8 @@ export interface AmbarSetDeliveryEndDateRequest {
     fileTypeId?: string
     lat: number | undefined
     lon: number | undefined
+    /** 4.3: teslim alan kisi (siparisin Teslim Alan alani). */
+    shippingReceiver?: string
 }
 
 export interface AmbarSetDeliveryEndDateResponse {

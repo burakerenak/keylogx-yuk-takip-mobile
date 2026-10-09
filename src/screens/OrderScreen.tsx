@@ -15,7 +15,9 @@ import { ArrowRight, LucideArrowBigRight, Map } from 'lucide-react-native';
 import ScrollView from '../components/ScrollView';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { saveAsDraftIrsaliye } from '../api/uyumsoft';
-import { Alert, Linking, PermissionsAndroid, Platform } from 'react-native';
+import { Alert, Linking, PermissionsAndroid, Platform, StyleSheet, View } from 'react-native';
+import { Navigation } from 'lucide-react-native';
+import { Dugme, Etiket, EtiketTonu, Kart, Yazi } from '../ui';
 import Card from '../components/Card';
 import { ambarSetDeliveryDate, ambarSetDeliveryEndDate, ambarSetLoadDate, ambarSetLoadEndDate } from '../api/ambar';
 import KanitFotograflari from '../components/KanitFotograflari';
@@ -44,7 +46,12 @@ export default function OrderScreen() {
     };
 
     const onStartAmbarVoyage = async (_ambarVoyageId: string) => {
-        var startAmbarVoyageResponse = await startAmbarVoyage({ id: _ambarVoyageId });
+        try {
+            await startAmbarVoyage({ id: _ambarVoyageId });
+        } catch {
+            // Mesaji baglanti katmani gosterir.
+        }
+
         onGetAmbarVoyageById(_ambarVoyageId);
     };
 
@@ -56,7 +63,12 @@ export default function OrderScreen() {
             return;
         }
 
-        var endAmbarVoyageResponse = await endAmbarVoyage({ id: _ambarVoyageId });
+        try {
+            await endAmbarVoyage({ id: _ambarVoyageId });
+        } catch {
+            // Mesaji baglanti katmani gosterir.
+        }
+
         onGetAmbarVoyageById(_ambarVoyageId);
     };
 
@@ -95,9 +107,14 @@ export default function OrderScreen() {
     const [kanitEkrani, setKanitEkrani] = useState<{ ambarId: string, ambarVoyageId: string, mod: 'yukleme' | 'teslim' } | undefined>(undefined);
 
     const onAmbarSetLoadDate = async (_ambarVoyageId: string, _ambarId: string) => {
-        var location = await getCurrentLocation();
+        try {
+            var location = await getCurrentLocation();
 
-        var ambarSetLoadDateResponse = await ambarSetLoadDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude });
+            await ambarSetLoadDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude });
+        } catch {
+            // Sunucunun mesajini (or. "Yukleme adresine yakin degilsiniz: telefonunuz 902 m uzakta") baglanti katmani gosterir.
+        }
+
         onGetAmbarVoyageById(_ambarVoyageId);
     };
 
@@ -109,10 +126,16 @@ export default function OrderScreen() {
         setKanitEkrani({ ambarId: _ambarId, ambarVoyageId: _ambarVoyageId, mod: 'yukleme' });
     };
 
-    const yuklemeyiTamamla = async (_ambarVoyageId: string, _ambarId: string) => {
-        var location = await getCurrentLocation();
+    const yuklemeyiTamamla = async (_ambarVoyageId: string, _ambarId: string, _teslimEden: string) => {
+        try {
+            var location = await getCurrentLocation();
 
-        var yanit = await ambarSetLoadEndDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude });
+            // 4.3: Teslim Eden siparisin web ekranindaki alana yazilir.
+            await ambarSetLoadEndDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude, shippingDeliverer: _teslimEden });
+        } catch {
+            // Reddedildi: mesaj gosterildi, kanit ekrani acik kalir, surucu tekrar deneyebilir.
+            return;
+        }
 
         setKanitEkrani(undefined);
         onGetAmbarVoyageById(_ambarVoyageId);
@@ -126,20 +149,29 @@ export default function OrderScreen() {
         );
     };
 
-    const teslimiTamamla = async (_ambarVoyageId: string, _ambarId: string) => {
-        var location = await getCurrentLocation();
+    const teslimiTamamla = async (_ambarVoyageId: string, _ambarId: string, _teslimAlan: string) => {
+        try {
+            var location = await getCurrentLocation();
 
-        // Fotograflar onceden tek tek yuklendi; bu cagriya b64 gonderilmez.
-        var yanit = await ambarSetDeliveryEndDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude });
+            // Fotograflar onceden tek tek yuklendi; bu cagriya b64 gonderilmez. 4.3: Teslim Alan siparise yazilir.
+            await ambarSetDeliveryEndDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude, shippingReceiver: _teslimAlan });
+        } catch {
+            return;
+        }
 
         setKanitEkrani(undefined);
         onGetAmbarVoyageById(_ambarVoyageId);
     };
 
     const onAmbarSetDeliveryDate = async (_ambarVoyageId: string, _ambarId: string) => {
-        var location = await getCurrentLocation();
+        try {
+            var location = await getCurrentLocation();
 
-        var ambarSetDeliveryDateResponse = await ambarSetDeliveryDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude });
+            await ambarSetDeliveryDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude });
+        } catch {
+            // Mesaji baglanti katmani gosterir.
+        }
+
         onGetAmbarVoyageById(_ambarVoyageId);
     };
 
@@ -238,207 +270,77 @@ export default function OrderScreen() {
         }
     };
 
+    const durumTonu = (item: GetAmbarVoyageByIdResponseAmbar): EtiketTonu =>
+        item.deliveryEndDate ? 'yesil' : item.loadEndDate ? 'turkuaz' : item.loadDate ? 'mavi' : 'amber';
+
     return (
         <Layout title={(data?.refNo ?? '') + ' Yüklerim'} hasPadding={false} canGoBack>
             <Box flexGrow={1}>
                 <ScrollView>
                     {
-                        data?.ambars?.map((item, index) => (
-                            <Box key={generateUUID()} overflow='hidden' mt={index == 0 ? 0 : 15}>
-                                <Card p={0}>
-                                    <Box p={15}>
-                                        <Box flexDirection='row'>
-                                            <Box flexGrow={1} justifyContent='center'>
-                                                <Text fontWeight={'600'} color={theme.colors.muted} fontSize={theme.fontSizes.md}>{item.refNo}</Text>
-                                            </Box>
-                                            <Box justifyContent='center'>
-                                                <Text fontWeight={'600'} color={theme.colors.blue} fontSize={theme.fontSizes.md}>{item.orderStatusName}</Text>
-                                            </Box>
-                                        </Box>
+                        data?.ambars?.map((item, index) => {
+                            const surer = data.startDate && !data.endDate;
 
-                                        <Box mt={15} mb={15} height={1} bg={theme.colors.border} />
+                            return (
+                                <Kart key={item.ambarId} style={{ marginTop: index == 0 ? 0 : 14, gap: 12 }}>
+                                    <View style={st.ust}>
+                                        <Yazi tur="govdeKalin" style={{ fontWeight: '700' }}>{item.refNo}</Yazi>
+                                        {item.orderStatusName ? <Etiket metin={item.orderStatusName} ton={durumTonu(item)} /> : null}
+                                    </View>
 
-                                        <Box flexDirection='row'>
-                                            <Box mr={10}>
-                                                <Box zIndex={1} position='absolute' mt={6} width={10} height={10} borderRadius={99} bg={theme.colors.blue} />
-                                                <Box ml={4} flexGrow={1} width={2} bg={theme.colors.border} />
-                                            </Box>
-                                            <Box mb={15}>
-                                                <Text fontWeight='600' fontSize={theme.fontSizes.sm} color={theme.colors.ink}>{item.loadingFirmCustomerName}</Text>
-                                                <Text fontSize={theme.fontSizes.xs} color={theme.colors.muted}>{item.loadingCountyName} • {item.loadingDistrictName}</Text>
-                                            </Box>
-                                        </Box>
-                                        <Box flexDirection='row'>
-                                            <Box mr={10}>
-                                                <Box zIndex={1} position='absolute' mt={6} width={10} height={10} borderRadius={99} bg={theme.colors.green} />
-                                                <Box ml={4} flexGrow={1} width={2} bg={theme.colors.border} />
-                                            </Box>
-                                            <Box>
-                                                <Text fontWeight='600' fontSize={theme.fontSizes.sm} color={theme.colors.ink}>{item.deliverFirmCustomerName}</Text>
-                                                <Text fontSize={theme.fontSizes.xs} color={theme.colors.muted}>{item.deliverCountyName} • {item.deliverDistrictName}</Text>
-                                            </Box>
-                                        </Box>
+                                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                                        <View style={{ alignItems: 'center', paddingTop: 5 }}>
+                                            <View style={[st.nokta, { backgroundColor: theme.colors.blue }]} />
+                                            <View style={st.cizgi} />
+                                            <View style={[st.nokta, { backgroundColor: theme.colors.teal }]} />
+                                        </View>
+                                        <View style={{ flex: 1, gap: 10 }}>
+                                            <View>
+                                                <Yazi tur="govdeKalin" satir={1}>{item.loadingFirmCustomerName}</Yazi>
+                                                <Yazi tur="kucuk" satir={1}>{item.loadingCountyName} • {item.loadingDistrictName}</Yazi>
+                                            </View>
+                                            <View>
+                                                <Yazi tur="govdeKalin" satir={1}>{item.deliverFirmCustomerName}</Yazi>
+                                                <Yazi tur="kucuk" satir={1}>{item.deliverCountyName} • {item.deliverDistrictName}</Yazi>
+                                            </View>
+                                        </View>
+                                    </View>
 
-                                        <Box mt={15} mb={15} height={1} bg={theme.colors.border} />
+                                    <View style={st.bilgi}>
+                                        <Yazi tur="kucukKalin">{formatWeight(sum(item.ambarProducts.map(x => x.weight ?? 0)))}{data?.vehicleType2Name ? ' · ' + data.vehicleType2Name : ''}</Yazi>
+                                        <Yazi tur="kucukKalin">{getDistanceKm(item.deliverFirmCustomerAddressLat ?? 0, item.deliverFirmCustomerAddressLon ?? 0, item.loadingFirmCustomerAddressLat ?? 0, item.loadingFirmCustomerAddressLon ?? 0).toFixed(1)} km</Yazi>
+                                        <Yazi tur="kucuk">{item.createdDateStr}</Yazi>
+                                    </View>
 
-                                        <Box flexDirection='row'>
-                                            <Box flex={1} justifyContent='center'>
-                                                <Box flexDirection='row'>
-                                                    <Box justifyContent='center'>
-                                                        <Text fontSize={theme.fontSizes.xs} fontWeight='600' color={theme.colors.ink}>{formatWeight(sum(item.ambarProducts.map(x => x.weight ?? 0)))}</Text>
-                                                    </Box>
-                                                    {
-                                                        data?.vehicleType2Name && (
-                                                            <Box justifyContent='center'>
-                                                                <Text fontSize={theme.fontSizes.xs} color={theme.colors.muted}> • {data.vehicleType2Name}</Text>
-                                                            </Box>
-                                                        )
-                                                    }
-                                                </Box>
-                                            </Box>
-                                            <Box flex={1} justifyContent='center'>
-                                                <Text fontSize={theme.fontSizes.xs} fontWeight='600' color={theme.colors.ink}>{getDistanceKm(item.deliverFirmCustomerAddressLat ?? 0, item.deliverFirmCustomerAddressLon ?? 0, item.loadingFirmCustomerAddressLat ?? 0, item.loadingFirmCustomerAddressLon ?? 0).toFixed(2)} km</Text>
-                                            </Box>
-                                            <Box flex={1} justifyContent='center'>
-                                                <Text textAlign='right' fontSize={theme.fontSizes.xs} color={theme.colors.muted}>{item.createdDateStr}</Text>
-                                            </Box>
-                                        </Box>
-
-                                        <Box mt={15} mb={15} height={1} bg={theme.colors.border} />
-
-                                        <Box gap={15}>
-                                            <Button onPress={() => navigation.navigate('Detail', { ambarId: item.ambarId })} pb={7.5} pt={7.5} fontSize={theme.fontSizes.sm} bg={theme.colors.blue} color={theme.colors.white} text='Detay' />
-
+                                    <View style={{ gap: 10 }}>
+                                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                                            <Dugme kucuk tur="cizgili" metin="Detay" onPress={() => navigation.navigate('Detail', { ambarId: item.ambarId })} style={{ flex: 1 }} />
                                             {
                                                 (!item.loadDate || !item.loadEndDate || !item.deliveryDate || !item.deliveryEndDate) && (
-                                                    <Button
-                                                        onPress={() => redirectToNavigation(item)}
-                                                        pb={7.5}
-                                                        pt={7.5}
-                                                        fontSize={theme.fontSizes.sm}
-                                                        bg={theme.colors.orange}
-                                                        color={theme.colors.white}
-                                                        text='Navigasyon'
-                                                    />
+                                                    <Dugme kucuk tur="cizgili" metin="Navigasyon" ikon={<Navigation size={18} color={theme.colors.ink} />} onPress={() => redirectToNavigation(item)} style={{ flex: 1 }} />
                                                 )
                                             }
+                                        </View>
 
-                                            {
-                                                (data.startDate && !data.endDate && !item.loadDate) && (
-                                                    <Button
-                                                        onPress={() => onAmbarSetLoadDate(data.ambarVoyageId, item.ambarId)}
-                                                        pb={7.5}
-                                                        pt={7.5}
-                                                        fontSize={theme.fontSizes.sm}
-                                                        bg={theme.colors.green}
-                                                        color={theme.colors.white}
-                                                        text='Yükleme Noktasına Varıldı'
-                                                    />
-                                                )
-                                            }
-
-                                            {
-                                                (data.startDate && !data.endDate && item.loadDate && !item.loadEndDate) && (
-                                                    <Button
-                                                        onPress={() => onAmbarSetLoadEndDate(data.ambarVoyageId, item.ambarId)}
-                                                        pb={7.5}
-                                                        pt={7.5}
-                                                        fontSize={theme.fontSizes.sm}
-                                                        bg={theme.colors.green}
-                                                        color={theme.colors.white}
-                                                        text='Yükleme Yapıldı'
-                                                    />
-                                                )
-                                            }
-
-                                            {
-                                                (data.startDate && !data.endDate && item.loadEndDate && !item.deliveryDate) && (
-                                                    <Button
-                                                        onPress={() => onAmbarSetDeliveryDate(data.ambarVoyageId, item.ambarId)}
-                                                        pb={7.5}
-                                                        pt={7.5}
-                                                        fontSize={theme.fontSizes.sm}
-                                                        bg={theme.colors.green}
-                                                        color={theme.colors.white}
-                                                        text='Boşaltma Noktasına Varıldı'
-                                                    />
-                                                )
-                                            }
-
-                                            {
-                                                (data.startDate && !data.endDate && item.deliveryDate && !item.deliveryEndDate) && (
-                                                    <Button
-                                                        onPress={() => onDeliver(data.ambarVoyageId, item.ambarId)}
-                                                        pb={7.5}
-                                                        pt={7.5}
-                                                        fontSize={theme.fontSizes.sm}
-                                                        bg={theme.colors.green}
-                                                        color={theme.colors.white}
-                                                        text='Teslim Edildi'
-                                                    />
-                                                )
-                                            }
-
-                                            {
-                                                !(item.isSendGib === true) && (
-                                                    <Button
-                                                        onPress={() => preSaveAsDraftIrsaliye(item.ambarId, data.ambarVoyageId)}
-                                                        pb={7.5}
-                                                        pt={7.5}
-                                                        fontSize={theme.fontSizes.sm}
-                                                        bg={theme.colors.ink}
-                                                        color={theme.colors.white}
-                                                        text="GİB'e Gönder"
-                                                    />
-                                                )
-                                            }
-                                        </Box>
-                                    </Box>
-                                </Card>
-                            </Box>
-                        ))
+                                        {surer && !item.loadDate && <Dugme tur="mavi" metin="Yükleme Noktasına Varıldı" onPress={() => onAmbarSetLoadDate(data.ambarVoyageId, item.ambarId)} />}
+                                        {surer && item.loadDate && !item.loadEndDate && <Dugme tur="mavi" metin="Yükleme Yapıldı" onPress={() => onAmbarSetLoadEndDate(data.ambarVoyageId, item.ambarId)} />}
+                                        {surer && item.loadEndDate && !item.deliveryDate && <Dugme tur="turkuaz" metin="Boşaltma Noktasına Varıldı" onPress={() => onAmbarSetDeliveryDate(data.ambarVoyageId, item.ambarId)} />}
+                                        {surer && item.deliveryDate && !item.deliveryEndDate && <Dugme tur="turkuaz" metin="Teslim Edildi" onPress={() => onDeliver(data.ambarVoyageId, item.ambarId)} />}
+                                        {!(item.isSendGib === true) && <Dugme kucuk tur="koyu" metin="GİB'e Gönder" onPress={() => preSaveAsDraftIrsaliye(item.ambarId, data.ambarVoyageId)} />}
+                                    </View>
+                                </Kart>
+                            );
+                        })
                     }
                 </ScrollView>
             </Box>
 
             {
                 (data && (!data.startDate || !data.endDate)) && (
-                    <Box p={15} bg={theme.colors.bg} borderTopWidth={1} borderColor={theme.colors.border}>
-                        <Box flexDirection='row'>
-                            <Box /*mr={15}*/ flexGrow={1} justifyContent='center'>
-                                {
-                                    (!data.startDate && !data.endDate) && (
-                                        <Button
-                                            onPress={() => onStartAmbarVoyage(data?.ambarVoyageId ?? '')}
-                                            color={theme.colors.white}
-                                            bg={theme.colors.blue}
-                                            text='Sefere Başla'
-                                        />
-                                    )
-                                }
-                                {
-                                    (data.startDate && !data.endDate) && (
-                                        <Button
-                                            onPress={() => onEndAmbarVoyage(data?.ambarVoyageId ?? '')}
-                                            color={theme.colors.white}
-                                            bg={theme.colors.red}
-                                            text='Seferi Bitir'
-                                        />
-                                    )
-                                }
-                            </Box>
-                            {/* <Box justifyContent='center'>
-                                <Button
-                                    pr={15}
-                                    pl={15}
-                                    onPress={() => navigation.navigate('Map', { ambarVoyageId: data.ambarVoyageId ?? '' })}
-                                    color={theme.colors.white}
-                                    bg={theme.colors.blue}
-                                    icon={<Map size={theme.fontSizes['2xl']} color={theme.colors.white} />}
-                                />
-                            </Box> */}
-                        </Box>
-                    </Box>
+                    <View style={st.alt}>
+                        {(!data.startDate && !data.endDate) && <Dugme tur="mavi" metin="Sefere Başla" onPress={() => onStartAmbarVoyage(data?.ambarVoyageId ?? '')} />}
+                        {(data.startDate && !data.endDate) && <Dugme tur="tehlike" metin="Seferi Bitir" onPress={() => onEndAmbarVoyage(data?.ambarVoyageId ?? '')} />}
+                    </View>
                 )
             }
 
@@ -446,17 +348,25 @@ export default function OrderScreen() {
                 isShown={kanitEkrani !== undefined}
                 ambarId={kanitEkrani?.ambarId}
                 mod={kanitEkrani?.mod ?? "yukleme"}
-                onTamamla={() => {
+                onTamamla={(kisi) => {
                     if (!kanitEkrani)
                         return;
 
                     if (kanitEkrani.mod === "yukleme")
-                        yuklemeyiTamamla(kanitEkrani.ambarVoyageId, kanitEkrani.ambarId);
+                        yuklemeyiTamamla(kanitEkrani.ambarVoyageId, kanitEkrani.ambarId, kisi);
                     else
-                        teslimiTamamla(kanitEkrani.ambarVoyageId, kanitEkrani.ambarId);
+                        teslimiTamamla(kanitEkrani.ambarVoyageId, kanitEkrani.ambarId, kisi);
                 }}
                 onKapat={() => setKanitEkrani(undefined)}
             />
         </Layout >
     );
 }
+
+const st = StyleSheet.create({
+    ust: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+    nokta: { width: 9, height: 9, borderRadius: 99 },
+    cizgi: { width: 2, flex: 1, minHeight: 18, backgroundColor: '#D5DAE3', marginVertical: 2 },
+    bilgi: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.colors.divider },
+    alt: { padding: 16, backgroundColor: theme.colors.white, borderTopWidth: 1, borderTopColor: theme.colors.border },
+});

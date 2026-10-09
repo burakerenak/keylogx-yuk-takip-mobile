@@ -1,10 +1,10 @@
-import { GetAmbarByIdResponse, GetAmbarByIdResponseAmbarProduct, GetAmbarListResponseData } from "../types/ambar.types";
-import { GetAmbarVoyageListResponseAmbar, GetAmbarVoyageListResponseData } from "../types/ambarVoyage.types";
+import { GetAmbarByIdResponse, GetAmbarByIdResponseAmbarProduct } from "../types/ambar.types";
 
 export type AppStackParamList = {
-    Home?: {
-        activeIndex: number
-    };
+    /** 4.3: Ana sayfa (Mesai Baslangici + Gorevlerim). */
+    Home: undefined;
+    /** 4.3: Gorevlerim = sefer listesi (eski ana ekran). */
+    Tasks: undefined;
     Detail: {
         ambarId: string
     },
@@ -15,6 +15,7 @@ export type AppStackParamList = {
         ambarVoyageId: string
     },
     Profile: undefined,
+    ChangePassword: undefined,
     UpdateProduct: {
         ambar: GetAmbarByIdResponse
         ambarProduct: GetAmbarByIdResponseAmbarProduct

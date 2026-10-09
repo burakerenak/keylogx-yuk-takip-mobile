@@ -1,23 +1,22 @@
-import React, { useCallback, useEffect, useState } from "react";
-import Text from "../components/Text"
+import React, { useCallback, useState } from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Layout from "../layouts/Layout";
 import { RouteProp, useFocusEffect, useRoute } from '@react-navigation/native';
 import { AppStackParamList } from "../navigation/types";
 import { GetAmbarByIdResponse } from "../types/ambar.types";
-import Box from "../components/Box";
 import { theme } from "../theme/theme";
-import Card from "../components/Card";
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { getAmbarById } from "../api/ambar";
 import { formatWeight, sum, toNumber } from "../utils/numberUtils";
 import { getDistanceKm } from "../utils/commonUtils";
-import ScrollView from "../components/ScrollView";
-import Button from "../components/Button";
 import { Phone } from "lucide-react-native";
 import { telefonAra, telefonAramaAdresi } from "../utils/telefon";
+import { BilgiSatiri, Dugme, Kart, Yazi } from "../ui";
 
-/** Firma bilgisinin altinda yetkili ad soyad ve telefonu; telefona dokununca arama acilir (09.10.2026). */
+const c = theme.colors;
+
+/** Firma bilgisinin altinda yetkili ad soyad ve telefonu; "Ara"ya dokununca arama acilir (4.2, 4.3'te yeni gorunum). */
 const FirmaYetkilisi = ({ adSoyad, telefon }: { adSoyad?: string | null, telefon?: string | null }) => {
     if (!adSoyad && !telefon)
         return null;
@@ -25,20 +24,49 @@ const FirmaYetkilisi = ({ adSoyad, telefon }: { adSoyad?: string | null, telefon
     const aranabilir = !!telefonAramaAdresi(telefon);
 
     return (
-        <Box mt={6}>
-            {adSoyad ? <Text fontSize={theme.fontSizes.xs} color={theme.colors.ink}>Yetkili: {adSoyad}</Text> : null}
-            <Box mt={4} flexDirection="row" alignItems="center" onPress={aranabilir ? () => telefonAra(telefon) : undefined}>
-                {aranabilir && (
-                    <Box mr={6} width={26} height={26} borderRadius={99} bg={theme.colors.green} alignItems="center" justifyContent="center">
-                        <Phone size={14} color={theme.colors.white} />
-                    </Box>
-                )}
-                <Text fontSize={theme.fontSizes.sm} fontWeight="600" color={aranabilir ? theme.colors.blue : theme.colors.muted}>{telefon || "Telefon: —"}</Text>
-            </Box>
-        </Box>
-    )
+        <View style={s.yetkili}>
+            <View style={{ flex: 1 }}>
+                {adSoyad ? <Yazi tur="kucukKalin" satir={1}>Yetkili: {adSoyad}</Yazi> : null}
+                <Yazi tur="kucuk" satir={1}>{telefon || 'Telefon: —'}</Yazi>
+            </View>
+            {
+                aranabilir && (
+                    <TouchableOpacity onPress={() => telefonAra(telefon)} style={s.ara} accessibilityLabel="Yetkiliyi ara">
+                        <Phone size={16} color={c.greenDark} />
+                        <Text style={s.araYazi}>Ara</Text>
+                    </TouchableOpacity>
+                )
+            }
+        </View>
+    );
 }
 
+/** Rota kartindaki bir durak (Y: yukleme, T: teslim). */
+const Durak = ({ harf, renk, zemin, firma, adres, ilce, yetkili, telefon }: {
+    harf: string, renk: string, zemin: string, firma?: string, adres?: string, ilce?: string, yetkili?: string | null, telefon?: string | null
+}) => (
+    <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View style={[s.harf, { backgroundColor: zemin }]}><Text style={[s.harfYazi, { color: renk }]}>{harf}</Text></View>
+        <View style={{ flex: 1, gap: 3 }}>
+            <Yazi tur="govdeKalin" style={{ fontWeight: '700' }}>{firma}</Yazi>
+            {adres ? <Yazi tur="kucuk">{adres}</Yazi> : null}
+            {ilce ? <Yazi tur="kucuk">{ilce}</Yazi> : null}
+            <FirmaYetkilisi adSoyad={yetkili} telefon={telefon} />
+        </View>
+    </View>
+);
+
+const Kutu = ({ etiket, deger }: { etiket: string, deger?: string }) => (
+    <View style={s.kutu}>
+        <Yazi tur="kucukKalin" style={{ color: c.muted, fontSize: 12 }}>{etiket}</Yazi>
+        <Yazi tur="govdeKalin" style={{ fontSize: 17, fontWeight: '700' }} satir={1}>{deger || '—'}</Yazi>
+    </View>
+);
+
+/**
+ * Siparis detayi (4.3, 09.10.2026): rota + yetkililer, Agirlik / Arac Cinsi / Mesafe / Yukleme Saati, yuk detayi.
+ * "Arac" bolumu kaldirildi (plaka - dorse Gorevlerim'de); Tonaj -> Agirlik, Kasa Tipi -> Arac Cinsi.
+ */
 const DetailScreen = () => {
     const route = useRoute<RouteProp<AppStackParamList, 'Detail'>>();
 
@@ -48,166 +76,74 @@ const DetailScreen = () => {
     useFocusEffect(
         useCallback(() => {
             onGetAmbarById(route.params.ambarId);
-
-            return () => {
-                // İstersen temizleme işlemleri
-            };
         }, [])
     );
 
     const onGetAmbarById = async (_ambarId: string) => {
-        var getAmbarByIdResponse = await getAmbarById({ id: _ambarId });
-        setData(getAmbarByIdResponse);
+        try {
+            setData(await getAmbarById({ id: _ambarId }));
+        } catch {
+            // Hata mesajini baglanti katmani gosterir.
+        }
     };
+
+    const km = data ? getDistanceKm(data.deliverFirmCustomerAddressLat ?? 0, data.deliverFirmCustomerAddressLon ?? 0, data.loadingFirmCustomerAddressLat ?? 0, data.loadingFirmCustomerAddressLon ?? 0) : 0;
 
     return (
         <Layout title={(data?.refNo ?? '') + ' Detayları'} canGoBack hasPadding={false}>
-            <ScrollView>
+            <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 28 }}>
                 {
                     data && (
                         <React.Fragment>
-                            <Card>
-                                <Box flexDirection='row'>
-                                    <Box mr={10}>
-                                        <Box zIndex={1} position='absolute' mt={6} width={10} height={10} borderRadius={99} bg={theme.colors.blue} />
-                                        <Box ml={4} flexGrow={1} width={2} bg={theme.colors.border} />
-                                    </Box>
-                                    <Box mb={15}>
-                                        <Text fontWeight='600' fontSize={theme.fontSizes.sm} color={theme.colors.ink}>{data.loadingFirmCustomerName}</Text>
-                                        <Text fontSize={theme.fontSizes.xs} color={theme.colors.muted}>{data.loadingFirmCustomerAddressText}</Text>
-                                        <Text fontSize={theme.fontSizes.xs} color={theme.colors.muted}>{data.loadingCountyName} • {data.loadingDistrictName}</Text>
-                                        <FirmaYetkilisi adSoyad={data.loadingFirmAuthorizedPersonName} telefon={data.loadingFirmAuthorizedPersonPhone} />
-                                    </Box>
-                                </Box>
-                                <Box flexDirection='row'>
-                                    <Box mr={10}>
-                                        <Box zIndex={1} position='absolute' mt={6} width={10} height={10} borderRadius={99} bg={theme.colors.green} />
-                                        <Box ml={4} flexGrow={1} width={2} bg={theme.colors.border} />
-                                    </Box>
-                                    <Box>
-                                        <Text fontWeight='600' fontSize={theme.fontSizes.sm} color={theme.colors.ink}>{data.deliverFirmCustomerName}</Text>
-                                        <Text fontSize={theme.fontSizes.xs} color={theme.colors.muted}>{data.deliverFirmCustomerAddressText}</Text>
-                                        <Text fontSize={theme.fontSizes.xs} color={theme.colors.muted}>{data.deliverCountyName} • {data.deliverDistrictName}</Text>
-                                        <FirmaYetkilisi adSoyad={data.deliverFirmAuthorizedPersonName} telefon={data.deliverFirmAuthorizedPersonPhone} />
-                                    </Box>
-                                </Box>
-                            </Card>
+                            {data.orderStatusName ? <Yazi tur="kucukKalin" style={{ color: c.blueDark }}>{data.orderStatusName}</Yazi> : null}
 
-                            <Card mt={15}>
-                                <Text fontSize={theme.fontSizes.sm} fontWeight="700" color={theme.colors.muted}>TOPLAM YÜK BİLGİSİ</Text>
+                            <Kart style={{ gap: 14 }}>
+                                <Durak
+                                    harf="Y" renk={c.blueDark} zemin={c.blueSoft}
+                                    firma={data.loadingFirmCustomerName}
+                                    adres={data.loadingFirmCustomerAddressText}
+                                    ilce={[data.loadingCountyName, data.loadingDistrictName].filter(x => x).join(' • ')}
+                                    yetkili={data.loadingFirmAuthorizedPersonName}
+                                    telefon={data.loadingFirmAuthorizedPersonPhone}
+                                />
+                                <View style={s.ayrac} />
+                                <Durak
+                                    harf="T" renk={c.tealDark} zemin={c.tealSoft}
+                                    firma={data.deliverFirmCustomerName}
+                                    adres={data.deliverFirmCustomerAddressText}
+                                    ilce={[data.deliverCountyName, data.deliverDistrictName].filter(x => x).join(' • ')}
+                                    yetkili={data.deliverFirmAuthorizedPersonName}
+                                    telefon={data.deliverFirmAuthorizedPersonPhone}
+                                />
+                            </Kart>
 
-                                <Box mt={15}>
-                                    <Box pt={8} pb={8} borderBottomWidth={1} borderTopWidth={1} borderColor={theme.colors.border} flexDirection="row">
-                                        <Box flexGrow={1} justifyContent="center">
-                                            <Text color={theme.colors.muted} fontSize={theme.fontSizes.md}>Tonaj</Text>
-                                        </Box>
-                                        <Box justifyContent="center">
-                                            <Text color={theme.colors.ink} fontWeight="600" fontSize={theme.fontSizes.md}>{formatWeight(sum(data.ambarProducts.map(x => toNumber(x.weight) ?? 0)))}</Text>
-                                        </Box>
-                                    </Box>
-                                    <Box pt={8} pb={8} borderBottomWidth={1} borderColor={theme.colors.border} flexDirection="row">
-                                        <Box flexGrow={1} justifyContent="center">
-                                            <Text color={theme.colors.muted} fontSize={theme.fontSizes.md}>Kasa Tipi</Text>
-                                        </Box>
-                                        <Box justifyContent="center">
-                                            <Text color={theme.colors.ink} fontWeight="600" fontSize={theme.fontSizes.md}>{data.ambarVoyage?.vehicleType2Name}</Text>
-                                        </Box>
-                                    </Box>
-                                    <Box pt={8} pb={8} borderBottomWidth={1} borderColor={theme.colors.border} flexDirection="row">
-                                        <Box flexGrow={1} justifyContent="center">
-                                            <Text color={theme.colors.muted} fontSize={theme.fontSizes.md}>Mesafe</Text>
-                                        </Box>
-                                        <Box justifyContent="center">
-                                            <Text color={theme.colors.ink} fontWeight="600" fontSize={theme.fontSizes.md}>{getDistanceKm(data.deliverFirmCustomerAddressLat ?? 0, data.deliverFirmCustomerAddressLon ?? 0, data.loadingFirmCustomerAddressLat ?? 0, data.loadingFirmCustomerAddressLon ?? 0).toFixed(2)} km</Text>
-                                        </Box>
-                                    </Box>
-                                    <Box pt={8} borderColor={theme.colors.border} flexDirection="row">
-                                        <Box flexGrow={1} justifyContent="center">
-                                            <Text color={theme.colors.muted} fontSize={theme.fontSizes.md}>Yükleme Saati</Text>
-                                        </Box>
-                                        <Box justifyContent="center">
-                                            <Text color={theme.colors.ink} fontWeight="600" fontSize={theme.fontSizes.md}>{data.createdDate}</Text>
-                                        </Box>
-                                    </Box>
-                                </Box>
-                            </Card>
-
-                            <Card mt={15}>
-                                <Text fontSize={theme.fontSizes.sm} fontWeight="700" color={theme.colors.muted}>ARAÇ</Text>
-
-                                <Box mt={15}>
-                                    <Box pt={8} pb={8} borderBottomWidth={1} borderTopWidth={1} borderColor={theme.colors.border} flexDirection="row">
-                                        <Box flexGrow={1} justifyContent="center">
-                                            <Text color={theme.colors.muted} fontSize={theme.fontSizes.md}>Plaka</Text>
-                                        </Box>
-                                        <Box justifyContent="center">
-                                            <Text color={theme.colors.ink} fontWeight="600" fontSize={theme.fontSizes.md}>{data.ambarVoyage?.vehicleName}</Text>
-                                        </Box>
-                                    </Box>
-                                    <Box pt={8} borderColor={theme.colors.border} flexDirection="row">
-                                        <Box flexGrow={1} justifyContent="center">
-                                            <Text color={theme.colors.muted} fontSize={theme.fontSizes.md}>Çekici</Text>
-                                        </Box>
-                                        <Box justifyContent="center">
-                                            <Text color={theme.colors.ink} fontWeight="600" fontSize={theme.fontSizes.md}>{data.ambarVoyage?.trailerName}</Text>
-                                        </Box>
-                                    </Box>
-                                </Box>
-                            </Card>
-
+                            <View style={s.izgara}>
+                                <Kutu etiket="Ağırlık" deger={formatWeight(sum(data.ambarProducts.map(x => toNumber(x.weight) ?? 0)))} />
+                                <Kutu etiket="Araç Cinsi" deger={data.ambarVoyage?.vehicleType2Name} />
+                                <Kutu etiket="Mesafe" deger={`${km.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} km`} />
+                                <Kutu etiket="Yükleme Saati" deger={data.loadDateStr || undefined} />
+                            </View>
 
                             {
                                 data.ambarProducts.length > 0 && (
-                                    <Card mt={15}>
-                                        <Text fontSize={theme.fontSizes.sm} fontWeight="700" color={theme.colors.muted}>DETAY YÜK BİLGİSİ</Text>
-
+                                    <Kart style={{ gap: 4 }}>
+                                        <Yazi tur="etiket">YÜK DETAYI</Yazi>
                                         {
-                                            data.ambarProducts.map((item, index) =>
-                                                <Card mt={15}>
-                                                    <Box pb={8} borderBottomWidth={1} borderColor={theme.colors.border} flexDirection="row">
-                                                        <Box flexGrow={1} justifyContent="center">
-                                                            <Text color={theme.colors.muted} fontSize={theme.fontSizes.md}>Kap Cinsi</Text>
-                                                        </Box>
-                                                        <Box justifyContent="center">
-                                                            <Text color={theme.colors.ink} fontWeight="600" fontSize={theme.fontSizes.md}>{item.potTypeName}</Text>
-                                                        </Box>
-                                                    </Box>
-                                                    <Box pt={8} pb={8} borderBottomWidth={1} borderColor={theme.colors.border} flexDirection="row">
-                                                        <Box flexGrow={1} justifyContent="center">
-                                                            <Text color={theme.colors.muted} fontSize={theme.fontSizes.md}>Adet</Text>
-                                                        </Box>
-                                                        <Box justifyContent="center">
-                                                            <Text color={theme.colors.ink} fontWeight="600" fontSize={theme.fontSizes.md}>{item.quantity}</Text>
-                                                        </Box>
-                                                    </Box>
-                                                    <Box pt={8} pb={8} borderBottomWidth={1} borderColor={theme.colors.border} flexDirection="row">
-                                                        <Box flexGrow={1} justifyContent="center">
-                                                            <Text color={theme.colors.muted} fontSize={theme.fontSizes.md}>Ürün</Text>
-                                                        </Box>
-                                                        <Box justifyContent="center">
-                                                            <Text color={theme.colors.ink} fontWeight="600" fontSize={theme.fontSizes.md}>{item.product}</Text>
-                                                        </Box>
-                                                    </Box>
-                                                    <Box pt={8} pb={8} borderBottomWidth={1} borderColor={theme.colors.border} flexDirection="row">
-                                                        <Box flexGrow={1} justifyContent="center">
-                                                            <Text color={theme.colors.muted} fontSize={theme.fontSizes.md}>Açıklama</Text>
-                                                        </Box>
-                                                        <Box justifyContent="center">
-                                                            <Text color={theme.colors.ink} fontWeight="600" fontSize={theme.fontSizes.md}>{item.description}</Text>
-                                                        </Box>
-                                                    </Box>
-
+                                            data.ambarProducts.map((item, index) => (
+                                                <View key={index} style={index > 0 ? s.urunAyrac : null}>
+                                                    <BilgiSatiri etiket="Kap cinsi" deger={item.potTypeName} />
+                                                    <BilgiSatiri etiket="Adet" deger={item.quantity != null ? String(item.quantity) : undefined} />
+                                                    <BilgiSatiri etiket="Ürün" deger={item.product} />
+                                                    <BilgiSatiri etiket="Açıklama" deger={item.description} son />
                                                     {
                                                         (data?.ambarVoyage?.startDate && data.loadDate) && (
-                                                            <Box pt={8}>
-                                                                <Button onPress={() => navigation.navigate('UpdateProduct', { ambar: data, ambarProduct: item })} pb={7.5} pt={7.5} fontSize={theme.fontSizes.sm} bg={theme.colors.blue} color={theme.colors.white} text='Güncelle' />
-                                                            </Box>
+                                                            <Dugme kucuk tur="cizgili" metin="Güncelle" onPress={() => navigation.navigate('UpdateProduct', { ambar: data, ambarProduct: item })} style={{ marginTop: 8 }} />
                                                         )
                                                     }
-                                                </Card>
-                                            )
+                                                </View>
+                                            ))
                                         }
-                                    </Card>
+                                    </Kart>
                                 )
                             }
                         </React.Fragment>
@@ -217,5 +153,17 @@ const DetailScreen = () => {
         </Layout>
     )
 }
+
+const s = StyleSheet.create({
+    yetkili: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
+    ara: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 38, paddingHorizontal: 14, borderRadius: 999, backgroundColor: c.greenSoft },
+    araYazi: { fontSize: 14, fontWeight: '700', color: c.greenDark },
+    harf: { width: 28, height: 28, borderRadius: 99, alignItems: 'center', justifyContent: 'center' },
+    harfYazi: { fontSize: 12, fontWeight: '700' },
+    ayrac: { height: 1, backgroundColor: c.divider },
+    izgara: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    kutu: { width: '48%', flexGrow: 1, backgroundColor: c.white, borderRadius: 16, borderWidth: 1, borderColor: c.border, padding: 14, gap: 4 },
+    urunAyrac: { borderTopWidth: 1, borderTopColor: c.border, marginTop: 10, paddingTop: 4 },
+});
 
 export default DetailScreen;
