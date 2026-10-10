@@ -78,7 +78,7 @@ export const Etiket = ({ metin, ton = 'gri' }: { metin: string, ton?: EtiketTonu
 
 // ---------------------------------------------------------------- Buton
 
-export type DugmeTuru = 'mavi' | 'turkuaz' | 'koyu' | 'cizgili' | 'tehlike' | 'turuncu';
+export type DugmeTuru = 'mavi' | 'turkuaz' | 'koyu' | 'cizgili' | 'tehlike' | 'turuncu' | 'yumusak' | 'mor';
 
 const dugmeRenkleri: Record<DugmeTuru, { bg: string, fg: string, border?: string }> = {
     mavi: { bg: c.blue, fg: c.white },
@@ -87,6 +87,10 @@ const dugmeRenkleri: Record<DugmeTuru, { bg: string, fg: string, border?: string
     cizgili: { bg: c.white, fg: c.ink, border: c.border },
     tehlike: { bg: c.white, fg: c.red, border: '#E7B4B4' },
     turuncu: { bg: c.orange, fg: c.white },
+    /** Acik mavi zemin, koyu mavi yazi: ikincil islemler (4.3.1, Detay > Guncelle). */
+    yumusak: { bg: c.blueSoft, fg: c.blueDark, border: '#BFD4FB' },
+    /** Canli, yumusak mor-mavi (4.3.1, GIB'e Gonder). */
+    mor: { bg: '#6366F1', fg: c.white },
 };
 
 export const Dugme = ({ metin, onPress, tur = 'mavi', pasif, kucuk, ikon, yukleniyor, style }: {

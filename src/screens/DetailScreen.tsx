@@ -119,7 +119,7 @@ const DetailScreen = () => {
 
                             <View style={s.izgara}>
                                 <Kutu etiket="Ağırlık" deger={formatWeight(sum(data.ambarProducts.map(x => toNumber(x.weight) ?? 0)))} />
-                                <Kutu etiket="Araç Cinsi" deger={data.ambarVoyage?.vehicleType2Name} />
+                                <Kutu etiket="Araç Cinsi" deger={data.ambarVoyage?.vehicleTypeName || data.ambarVoyage?.vehicleType2Name} />
                                 <Kutu etiket="Mesafe" deger={`${km.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} km`} />
                                 <Kutu etiket="Yükleme Saati" deger={data.loadDateStr || undefined} />
                             </View>
@@ -137,7 +137,7 @@ const DetailScreen = () => {
                                                     <BilgiSatiri etiket="Açıklama" deger={item.description} son />
                                                     {
                                                         (data?.ambarVoyage?.startDate && data.loadDate) && (
-                                                            <Dugme kucuk tur="cizgili" metin="Güncelle" onPress={() => navigation.navigate('UpdateProduct', { ambar: data, ambarProduct: item })} style={{ marginTop: 8 }} />
+                                                            <Dugme kucuk tur="yumusak" metin="Güncelle" onPress={() => navigation.navigate('UpdateProduct', { ambar: data, ambarProduct: item })} style={{ marginTop: 8 }} />
                                                         )
                                                     }
                                                 </View>

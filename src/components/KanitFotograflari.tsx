@@ -25,7 +25,7 @@ import { theme } from '../theme/theme';
  *
  * Dört kutu: zorunlu kanıt + üç isteğe bağlı evrak. Fotoğraf çekilir çekilmez
  * sunucuya yüklenir; dördünü sonda tek pakette göndermek sahada bağlantı
- * zayıfken riskli. Zorunlu kanıt çekilmeden ekrandan çıkılamaz.
+ * zayıfken riskli. Zorunlu kanıt çekilmeden işlem tamamlanamaz; ekrandan geri çıkılabilir (4.3.1).
  *
  * 4.3 (09.10.2026, Burak): fotoğraflardan ÖNCE kişi sorulur — yüklemede "Teslim Eden", teslimde "Teslim Alan";
  * ikisi de boş gelir ve zorunludur. Girilen ad siparişin web ekranındaki aynı alana yazılır.
@@ -239,17 +239,10 @@ const KanitFotograflari = ({ isShown, ambarId, mod, onTamamla, onKapat }: Props)
     };
 
     // Cikis kilitli: zorunlu kanit cekilmeden ekrandan cikilamaz, islem kaydedilmez.
+    // 4.3.1 (Burak): kullanici ekranda sikisip kalmamali; geri her zaman cikar. Cekilen fotograflar kayitli kalir,
+    // islem (yukleme / teslim) yalniz zorunlu fotograf eklenip "Tamamla"ya basilinca kaydedilir.
     const kapatmayiDene = () => {
-        if (eksikZorunlular.length === 0) {
-            onKapat();
-            return;
-        }
-
-        Alert.alert(
-            'Önce zorunlu fotoğrafı çekin',
-            `${eksikZorunlular.map(x => x.ad).join(', ')} çekilmeden bu ekrandan çıkılamaz. İşlem henüz kaydedilmedi.`,
-            [{ text: 'Anladım' }],
-        );
+        onKapat();
     };
 
     const baslik = adim === 'kisi' ? (mod === 'yukleme' ? 'Yükleme Yapıldı' : 'Teslim Et') : (mod === 'yukleme' ? 'Yükleme Kanıtı' : 'Teslim Kanıtı');
