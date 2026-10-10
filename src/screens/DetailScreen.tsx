@@ -136,7 +136,8 @@ const DetailScreen = () => {
                                                     <BilgiSatiri etiket="Ürün" deger={item.product} />
                                                     <BilgiSatiri etiket="Açıklama" deger={item.description} son />
                                                     {
-                                                        (data?.ambarVoyage?.startDate && data.loadDate) && (
+                                                        // Guncelle yukleme noktasina varistan itibaren acik (10.10.2026); varis kaydi olmayan eski siparislerde yukleme tarihi.
+                                                        (data?.ambarVoyage?.startDate && (data.loadArrivalDate || data.loadDate)) && (
                                                             <Dugme kucuk tur="yumusak" metin="Güncelle" onPress={() => navigation.navigate('UpdateProduct', { ambar: data, ambarProduct: item })} style={{ marginTop: 8 }} />
                                                         )
                                                     }
