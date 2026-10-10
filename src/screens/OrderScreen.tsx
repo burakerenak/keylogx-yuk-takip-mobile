@@ -73,6 +73,12 @@ export default function OrderScreen() {
     };
 
     const preSaveAsDraftIrsaliye = async (_ambarId: string, _ambarVoyageId: string) => {
+        // 4.3.1 (Burak): yuklendi olmadan e-irsaliye gonderilemez; kullanici Tamam deyip ekrana doner.
+        if (!data?.ambars?.find(x => x.ambarId === _ambarId)?.loadEndDate) {
+            Alert.alert('Uyarı', "Yükleme yapılmadan GİB'e gönderim yapamazsınız!", [{ text: 'Tamam' }]);
+            return;
+        }
+
         Alert.alert(
             "Emin Misiniz?",          // Title of the alert
             "", // Message body
@@ -307,7 +313,7 @@ export default function OrderScreen() {
                                     </View>
 
                                     <View style={st.bilgi}>
-                                        <Yazi tur="kucukKalin">{formatWeight(sum(item.ambarProducts.map(x => x.weight ?? 0)))}{data?.vehicleType2Name ? ' · ' + data.vehicleType2Name : ''}</Yazi>
+                                        <Yazi tur="kucukKalin">{formatWeight(sum(item.ambarProducts.map(x => x.weight ?? 0)))}{(data?.vehicleTypeName || data?.vehicleType2Name) ? ' · ' + (data?.vehicleTypeName || data?.vehicleType2Name) : ''}</Yazi>
                                         <Yazi tur="kucukKalin">{getDistanceKm(item.deliverFirmCustomerAddressLat ?? 0, item.deliverFirmCustomerAddressLon ?? 0, item.loadingFirmCustomerAddressLat ?? 0, item.loadingFirmCustomerAddressLon ?? 0).toFixed(1)} km</Yazi>
                                         <Yazi tur="kucuk">{item.createdDateStr}</Yazi>
                                     </View>
@@ -326,7 +332,7 @@ export default function OrderScreen() {
                                         {surer && item.loadDate && !item.loadEndDate && <Dugme tur="mavi" metin="Yükleme Yapıldı" onPress={() => onAmbarSetLoadEndDate(data.ambarVoyageId, item.ambarId)} />}
                                         {surer && item.loadEndDate && !item.deliveryDate && <Dugme tur="turkuaz" metin="Boşaltma Noktasına Varıldı" onPress={() => onAmbarSetDeliveryDate(data.ambarVoyageId, item.ambarId)} />}
                                         {surer && item.deliveryDate && !item.deliveryEndDate && <Dugme tur="turkuaz" metin="Teslim Edildi" onPress={() => onDeliver(data.ambarVoyageId, item.ambarId)} />}
-                                        {!(item.isSendGib === true) && <Dugme kucuk tur="koyu" metin="GİB'e Gönder" onPress={() => preSaveAsDraftIrsaliye(item.ambarId, data.ambarVoyageId)} />}
+                                        {!(item.isSendGib === true) && <Dugme kucuk tur="mor" metin="GİB'e Gönder" onPress={() => preSaveAsDraftIrsaliye(item.ambarId, data.ambarVoyageId)} />}
                                     </View>
                                 </Kart>
                             );

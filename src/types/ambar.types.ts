@@ -271,6 +271,8 @@ export interface GetAmbarByIdResponseAmbarVoyage {
     createdDate: string
     createdDateStr: string
     deviceData?: GetAmbarByIdResponseAmbarVoyageDeviceData
+    /** Arac tanimindaki "Arac Cinsi" (4.3.1; 4.3 yanlislikla Arac Cinsi 2 gosteriyordu). */
+    vehicleTypeName?: string
     vehicleType2Name?: string
     startDate?: string
     endDate?: string
