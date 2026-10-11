@@ -15,6 +15,9 @@ export type LoginResponse = {
     roles: string[]
     driverId: any
     driverName: any
+    /** 4.4 QR mesai: kullanici personele bagliysa dolu (ayni kisi hem surucu hem personel olabilir). */
+    personnelId?: string | null
+    personnelName?: string | null
     companyId: string
 }
 

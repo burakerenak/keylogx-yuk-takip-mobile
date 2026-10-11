@@ -19,7 +19,7 @@
       android:allowBackup="false"
       android:theme="@style/AppTheme"
       android:supportsRtl="true"
-      android:usesCleartextTraffic="true">
+      android:networkSecurityConfig="@xml/network_security_config">
       <meta-data android:name="com.google.android.geo.API_KEY" android:value="AIzaSyA9HV-r8v9UQrpesvGNOl78MoDMZIqqub8"/>
       <activity
         android:name=".MainActivity"

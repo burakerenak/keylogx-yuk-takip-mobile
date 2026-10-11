@@ -9,6 +9,7 @@ import OrderScreen from '../screens/OrderScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import UpdateProductScreen from '../screens/UpdateProductScreen';
+import MesaiQrScreen from '../screens/MesaiQrScreen';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
@@ -23,6 +24,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
             <Stack.Screen name="UpdateProduct" component={UpdateProductScreen} />
+            <Stack.Screen name="MesaiQr" component={MesaiQrScreen} />
         </Stack.Navigator>
     );
 };

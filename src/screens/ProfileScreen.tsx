@@ -60,7 +60,7 @@ const ProfileScreen = () => {
                 <View style={s.ust}>
                     <View style={s.avatar}><Text style={s.avatarYazi}>{basHarfler(ad)}</Text></View>
                     <Text style={s.ad}>{ad}</Text>
-                    <Text style={s.alt}>{[profil?.driverName ? 'Sürücü' : null, profil?.companyName].filter(x => x).join(' · ')}</Text>
+                    <Text style={s.alt}>{[profil?.driverName ? 'Sürücü' : null, user?.personnelId ? 'Personel' : null, profil?.companyName].filter(x => x).join(' · ')}</Text>
                 </View>
 
                 <View style={{ padding: 16, gap: 14 }}>
@@ -69,7 +69,15 @@ const ProfileScreen = () => {
                         <BilgiSatiri etiket="E-posta" deger={profil?.email} />
                         <BilgiSatiri etiket="Telefon" deger={profil?.phone || profil?.driverPhone} />
                         <BilgiSatiri etiket="Şirket" deger={profil?.companyName} />
-                        <BilgiSatiri etiket="Sürücü kaydı" deger={profil?.driverName} son />
+                        {
+                            // 4.4: yalniz personel olan kullanicida surucu satiri yerine personel kaydi gosterilir; ikisi de olabilir.
+                            user?.personnelId
+                                ? <>
+                                    {user?.driverId ? <BilgiSatiri etiket="Sürücü kaydı" deger={profil?.driverName} /> : null}
+                                    <BilgiSatiri etiket="Personel kaydı" deger={user.personnelName} son />
+                                </>
+                                : <BilgiSatiri etiket="Sürücü kaydı" deger={profil?.driverName} son />
+                        }
                     </Kart>
 
                     <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('ChangePassword')} style={s.satirDugme}>

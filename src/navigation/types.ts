@@ -15,6 +15,8 @@ export type AppStackParamList = {
         ambarVoyageId: string
     },
     Profile: undefined,
+    /** 4.4: QR ile mesai giris / cikis (kamera -> is tipi -> sonuc). */
+    MesaiQr: undefined,
     ChangePassword: undefined,
     UpdateProduct: {
         ambar: GetAmbarByIdResponse
