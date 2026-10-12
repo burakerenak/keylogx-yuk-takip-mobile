@@ -7,7 +7,7 @@ import AuthLayout from '../layouts/AuthLayout';
 import { theme } from '../theme/theme';
 import { deleteUser, saveUser } from '../services/userService';
 import notificationService from '../services/notificationService';
-import { Dugme } from '../ui';
+import { Dugme, SifreGirdisi } from '../ui';
 import { SURUM_METNI } from '../surum';
 
 const c = theme.colors;
@@ -86,10 +86,9 @@ export default function LoginScreen() {
                 />
 
                 <Text style={[s.etiket, { marginTop: 14 }]}>Şifre</Text>
-                <TextInput
+                <SifreGirdisi
                     value={password}
                     onChangeText={setPassword}
-                    secureTextEntry
                     placeholder="Şifreniz"
                     placeholderTextColor="#6F7C92"
                     style={s.kutu}

@@ -8,7 +8,7 @@ import { AppStackParamList } from '../navigation/types';
 import { changeMyPassword } from '../api/user';
 import { deleteUser } from '../services/userService';
 import { useAuthStore } from '../store/authStore';
-import { Dugme, EkranBaslik, Yazi } from '../ui';
+import { Dugme, EkranBaslik, SifreGirdisi, Yazi } from '../ui';
 
 const c = theme.colors;
 
@@ -56,7 +56,7 @@ export default function ChangePasswordScreen() {
     const Kutu = ({ etiket, deger, setDeger, id }: { etiket: string, deger: string, setDeger: (v: string) => void, id: string }) => (
         <View style={{ gap: 6 }}>
             <Text nativeID={id} style={s.etiket}>{etiket}</Text>
-            <TextInput accessibilityLabelledBy={id} value={deger} onChangeText={setDeger} secureTextEntry autoCapitalize="none" style={s.kutu} placeholderTextColor={c.placeholder} />
+            <SifreGirdisi accessibilityLabelledBy={id} value={deger} onChangeText={setDeger} style={s.kutu} placeholderTextColor={c.placeholder} />
         </View>
     );
 
