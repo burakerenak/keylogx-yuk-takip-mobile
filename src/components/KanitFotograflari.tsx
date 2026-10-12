@@ -15,7 +15,7 @@ import {
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PERMISSIONS, RESULTS, check, request } from 'react-native-permissions';
-import { ambarAddFileArchive, ambarDeleteFileArchive, getAmbarFileArchives } from '../api/ambar';
+import { ambarAddFileArchive, ambarDeleteFileArchive, getAmbarById, getAmbarFileArchives } from '../api/ambar';
 import { getConstantList } from '../api/constant';
 import { AmbarFileArchiveListItem } from '../types/ambar.types';
 import { theme } from '../theme/theme';
@@ -39,6 +39,8 @@ export const EVRAK_TURU = {
     TESLIM_EVRAGI: '4',
     YUKLEME_KANITI: '5',
     TESLIM_KANITI: '6',
+    /** 4.4 (12.10.2026): musteri irsaliyesi; sipariste Musteri Irsaliye No doluysa zorunlu. */
+    MUSTERI_IRSALIYE: '7',
 };
 
 interface Kutu {
@@ -51,7 +53,7 @@ interface Kutu {
 
 const YUKLEME_KUTULARI: Kutu[] = [
     { kod: EVRAK_TURU.YUKLEME_KANITI, ad: 'Yükleme Kanıtı', zorunlu: true, coklu: false, galeri: false },
-    { kod: EVRAK_TURU.IRSALIYE, ad: 'İrsaliye', zorunlu: false, coklu: false, galeri: true },
+    { kod: EVRAK_TURU.MUSTERI_IRSALIYE, ad: 'Müşteri İrsaliye', zorunlu: false, coklu: false, galeri: true },
     { kod: EVRAK_TURU.HASAR, ad: 'Hasar', zorunlu: false, coklu: true, galeri: true },
     { kod: EVRAK_TURU.DIGER, ad: 'Diğer', zorunlu: false, coklu: true, galeri: true },
 ];
@@ -73,7 +75,10 @@ interface Props {
 }
 
 const KanitFotograflari = ({ isShown, ambarId, mod, onTamamla, onKapat }: Props) => {
-    const kutular = mod === 'yukleme' ? YUKLEME_KUTULARI : TESLIM_KUTULARI;
+    // Sipariste Musteri Irsaliye No doluysa yuklemede "Musteri Irsaliye" fotografi da zorunlu (sunucu da denetler).
+    const [irsaliyeNoVar, setIrsaliyeNoVar] = useState(false);
+    const kutular = (mod === 'yukleme' ? YUKLEME_KUTULARI : TESLIM_KUTULARI)
+        .map(k => k.kod === EVRAK_TURU.MUSTERI_IRSALIYE ? { ...k, zorunlu: irsaliyeNoVar } : k);
 
     // iOS'ta tam sayfa Modal ekranin en ustunden baslar; baslik ve alt dugme guvenli alan kadar iceri alinir.
     // Android'de Modal durum cubugunun altinda acildigi icin ek pay verilmez (cift bosluk olmasin).
@@ -115,6 +120,13 @@ const KanitFotograflari = ({ isShown, ambarId, mod, onTamamla, onKapat }: Props)
 
             // Ekran kapanip acilsa da daha once cekilenler kutularinda gorunur.
             setDosyalar(await getAmbarFileArchives(_ambarId) ?? []);
+
+            if (mod === 'yukleme') {
+                const siparis = await getAmbarById({ id: _ambarId });
+                setIrsaliyeNoVar(!!String(siparis?.customerDeliveryNoteNumber ?? '').trim());
+            } else {
+                setIrsaliyeNoVar(false);
+            }
         } catch {
             Alert.alert('Hata', 'Fotoğraflar okunamadı. İnterneti kontrol edip tekrar deneyin.');
         } finally {
@@ -325,7 +337,7 @@ const KanitFotograflari = ({ isShown, ambarId, mod, onTamamla, onKapat }: Props)
                 <ScrollView contentContainerStyle={s.govde}>
                     <View style={s.uyari}>
                         <Text style={s.uyariYazi}>
-                            <Text style={s.kalin}>{kutular[0].ad}</Text> zorunludur. Diğerleri isteğe bağlıdır.
+                            <Text style={s.kalin}>{kutular.filter(k => k.zorunlu).map(k => k.ad).join(' ve ')}</Text> zorunludur. Diğerleri isteğe bağlıdır.
                         </Text>
                     </View>
 
