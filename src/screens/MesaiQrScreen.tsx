@@ -284,7 +284,7 @@ export default function MesaiQrScreen() {
         return (
             <ScrollView contentContainerStyle={st.govde}>
                 <Kart style={{ alignItems: 'center', gap: 8, paddingVertical: 24 }}>
-                    <Etiket metin={giris ? 'Giriş kaydedildi' : 'Çıkış kaydedildi'} ton={giris ? 'yesil' : 'mavi'} />
+                    <Etiket metin={giris ? 'Mesainiz başlamıştır' : 'Mesainiz sonlanmıştır'} ton={giris ? 'yesil' : 'mavi'} />
                     <Text style={st.buyukSaat}>{saat}</Text>
                     <Yazi tur="govdeKalin" style={{ textAlign: 'center' }}>{giris ? 'Giriş' : 'Çıkış'} · {kayit.noktaAdi}</Yazi>
                     <Yazi tur="kucuk">{tarihMetni(kayit.tarih)}</Yazi>
@@ -322,7 +322,7 @@ export default function MesaiQrScreen() {
         <View style={st.sayfa}>
             <SafeAreaView edges={['top']} style={{ backgroundColor: c.white }} />
             <EkranBaslik
-                baslik={mod.tur === 'sonuc' ? (mod.yanit.islem === 'GIRIS' ? 'Mesai başladı' : 'Mesai bitti') : mod.tur === 'isTipi' ? 'İş tipi seçin' : 'QR Okut'}
+                baslik={mod.tur === 'sonuc' ? (mod.yanit.islem === 'GIRIS' ? 'Mesainiz başlamıştır' : 'Mesainiz sonlanmıştır') : mod.tur === 'isTipi' ? 'İş tipi seçin' : 'QR Okut'}
                 altBaslik={mod.tur === 'kamera' ? 'Mesai giriş / çıkış' : undefined}
                 onGeri={() => navigation.goBack()}
             />

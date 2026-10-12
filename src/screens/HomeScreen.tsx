@@ -132,12 +132,13 @@ export default function HomeScreen() {
                         }
                     </View>
                     <View style={{ gap: 4 }}>
-                        <Text style={s.kartBaslik}>Mesai Başlangıcı</Text>
+                        <Text style={s.kartBaslik}>{depoKaydi || aracKaydi ? 'Mesaidesiniz' : 'Mesai Başlangıcı'}</Text>
                         {durumSatirlari.map(x => <Text key={x} style={[s.kartAlt, { color: c.white, fontWeight: '600' }]}>{x}</Text>)}
                         <Text style={[s.kartAlt, { color: '#CDEDEA' }]}>{altMetin}</Text>
                     </View>
                     <Dugme
-                        metin="QR Okut"
+                        // Buton adi duruma gore (12.10.2026, Burak): acik mesai yoksa baslat, varsa bitir; ikisi de QR okutur.
+                        metin={depoKaydi || aracKaydi ? 'Mesaiyi Bitir' : 'Mesai Başlat'}
                         tur="cizgili"
                         ikon={<QrCode size={22} color={c.ink} />}
                         onPress={() => navigation.navigate('MesaiQr')}
