@@ -172,9 +172,12 @@ export type GetAmbarByIdResponse = {
     poName: any
     ambarVoyage?: GetAmbarByIdResponseAmbarVoyage
     orderDate: string
+    /** Yukleme tarihi: 10.10.2026 itibariyla "Yukleme Yapildi" aninda dolar. */
     loadDate: any
-    /** Yukleme noktasina varis zamani (dd.MM.yyyy HH:mm). */
+    /** Yukleme tarihi (dd.MM.yyyy HH:mm). */
     loadDateStr?: string
+    /** Yukleme noktasina varis zamani ("Yukleme Noktasina Varildi", 10.10.2026). */
+    loadArrivalDate?: string | null
     deliveryDate: any
     senderCustomerId: any
     senderCustomerAddressTypeId: any
