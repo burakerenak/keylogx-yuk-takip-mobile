@@ -69,18 +69,18 @@ export default function LoginScreen() {
                     <Image source={require('../assets/keylogx-logo.png')} style={s.logo} resizeMode="contain" />
                 </TouchableOpacity>
 
-                <Text style={s.baslik}>Sürücü Girişi</Text>
-                <Text style={s.alt}>Kullanıcı adı ve şifrenizle giriş yapın.</Text>
+                <Text style={s.baslik}>Kullanıcı Girişi</Text>
+                <Text style={s.alt}>Kullanıcı adınız ya da telefon numaranız ve şifrenizle giriş yapın.</Text>
             </View>
 
             <View style={s.form}>
-                <Text style={s.etiket}>Kullanıcı adı</Text>
+                <Text style={s.etiket}>Kullanıcı adı / Telefon</Text>
                 <TextInput
                     value={username}
                     onChangeText={setUsername}
                     autoCapitalize="none"
                     autoCorrect={false}
-                    placeholder="Kullanıcı adınız"
+                    placeholder="Kullanıcı adı ya da telefon no giriniz"
                     placeholderTextColor="#6F7C92"
                     style={s.kutu}
                 />
