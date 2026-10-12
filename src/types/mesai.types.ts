@@ -20,6 +20,8 @@ export interface MesaiKaydiOzet {
     isTipiAdi: string | null
     /** "yyyy-MM-dd" (giris gunu). */
     tarih: string
+    /** "yyyy-MM-ddTHH:mm:ss" (sunucu saati); canli mesai sayaci icin. */
+    girisZamani: string
     /** "HH:mm" (sunucu saati). */
     girisSaati: string
     cikisSaati: string | null
@@ -48,6 +50,8 @@ export interface MesaiDurumResponse {
     /** Kullanici surucuye bagliysa dolu. */
     surucu: MesaiDurumu | null
     bugunCalismaSaati: BugunCalismaSaati | null
+    /** "yyyy-MM-ddTHH:mm:ss": yanit anindaki sunucu saati; sayac telefon saatinden bagimsiz olsun diye fark hesaplanir. */
+    sunucuZamani: string
 }
 
 export interface MesaiOkutRequest {
@@ -60,3 +64,37 @@ export interface MesaiOkutRequest {
 export type MesaiOkutResponse =
     | { islem: 'IS_TIPI_GEREKLI', noktaAdi: string }
     | { islem: 'GIRIS' | 'CIKIS', kayit: MesaiKaydiOzet, kapatilanDepoKaydi: MesaiKaydiOzet | null };
+
+/** Mesai/Gecmisim: govdesiz -> son 12 ay ozeti; yil+ay -> o ayin gunleri. */
+export interface MesaiGecmisimRequest {
+    yil?: number
+    ay?: number
+}
+
+export interface MesaiGecmisAy {
+    yil: number
+    ay: number
+    /** "ekim 2026" */
+    donemAdi: string
+    gunSayisi: number
+    sureDk: number
+    normalDk: number
+    ekDk: number
+    eksikCikis: number
+}
+
+export interface MesaiGecmisGun {
+    /** "yyyy-MM-dd" */
+    tarih: string
+    /** "pazartesi" */
+    gunAdi: string
+    sureDk: number
+    normalDk: number
+    ekDk: number
+    kayitlar: MesaiKaydiOzet[]
+}
+
+export interface MesaiGecmisimResponse {
+    aylar: MesaiGecmisAy[]
+    gunler: MesaiGecmisGun[]
+}

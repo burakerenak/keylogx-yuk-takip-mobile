@@ -14,7 +14,7 @@ import BottomMenu from '../components/BottomMenu';
 import { Dugme, Yazi } from '../ui';
 import { seferDurumu } from '../utils/sefer';
 import { useKullaniciTuru } from '../utils/kullanici';
-import { saattenBeri } from '../utils/mesai';
+import { saattenBeri, sayacMetni, sunucuZamaniCoz } from '../utils/mesai';
 
 const c = theme.colors;
 
@@ -45,11 +45,18 @@ export default function HomeScreen() {
 
     const [ozet, setOzet] = useState<{ toplam: number, baslatilmadi: number, yolda: number } | undefined>(undefined);
     const [mesai, setMesai] = useState<MesaiDurumResponse | undefined>(undefined);
+    /** Sunucu saati - telefon saati (ms); sayac telefonun saati yanlis olsa da dogru calissin. */
+    const [saatFarki, setSaatFarki] = useState(0);
+    const [simdi, setSimdi] = useState(() => Date.now());
 
     useFocusEffect(useCallback(() => {
         (async () => {
             try {
-                setMesai(await getMesaiDurum());
+                const durum = await getMesaiDurum();
+                const sunucu = sunucuZamaniCoz(durum?.sunucuZamani);
+
+                setSaatFarki(sunucu !== null ? sunucu - Date.now() : 0);
+                setMesai(durum);
             } catch {
                 // Sessiz istek: kart varsayilan metinle kalir.
                 setMesai(undefined);
@@ -85,6 +92,22 @@ export default function HomeScreen() {
     const aracKaydi = mesai?.surucu?.acikKayit ?? null;
     const personelMi = !!mesai?.personel || !!user?.personnelId;
     const calisma = mesai?.bugunCalismaSaati ?? null;
+
+    // Canli mesai sayaci (12.10.2026): acik kaydin girisinden beri gecen sure, saniyede bir; ekran odakta degilse durur.
+    const acikKayit = depoKaydi ?? aracKaydi;
+    const girisMs = sunucuZamaniCoz(acikKayit?.girisZamani);
+
+    useFocusEffect(useCallback(() => {
+        if (girisMs === null)
+            return;
+
+        setSimdi(Date.now());
+        const zamanlayici = setInterval(() => setSimdi(Date.now()), 1000);
+
+        return () => clearInterval(zamanlayici);
+    }, [girisMs]));
+
+    const gecenSure = girisMs !== null ? sayacMetni(simdi + saatFarki - girisMs) : null;
 
     const durumSatirlari: string[] = [];
 
@@ -134,6 +157,16 @@ export default function HomeScreen() {
                     <View style={{ gap: 4 }}>
                         <Text style={s.kartBaslik}>{depoKaydi || aracKaydi ? 'Mesaidesiniz' : 'Mesai Başlangıcı'}</Text>
                         {durumSatirlari.map(x => <Text key={x} style={[s.kartAlt, { color: c.white, fontWeight: '600' }]}>{x}</Text>)}
+                        {
+                            gecenSure
+                                ? (
+                                    <View style={s.sayacKutu} accessibilityLabel={`Mesai süresi ${gecenSure}`}>
+                                        <Text style={s.sayac}>{gecenSure}</Text>
+                                        <Text style={s.sayacEtiket}>Mesai süresi</Text>
+                                    </View>
+                                )
+                                : null
+                        }
                         <Text style={[s.kartAlt, { color: '#CDEDEA' }]}>{altMetin}</Text>
                     </View>
                     <Dugme
@@ -179,4 +212,7 @@ const s = StyleSheet.create({
     kartAlt: { fontSize: 14 },
     hap: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
     hapYazi: { fontSize: 13, fontWeight: '700' },
+    sayacKutu: { alignItems: 'center', marginTop: 10, marginBottom: 6, paddingVertical: 14, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.12)' },
+    sayac: { fontSize: 42, fontWeight: '700', color: c.white, letterSpacing: 1, fontVariant: ['tabular-nums'] },
+    sayacEtiket: { fontSize: 13, fontWeight: '600', color: '#CDEDEA', marginTop: 2 },
 });

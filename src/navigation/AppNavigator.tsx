@@ -10,6 +10,8 @@ import ProfileScreen from '../screens/ProfileScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import UpdateProductScreen from '../screens/UpdateProductScreen';
 import MesaiQrScreen from '../screens/MesaiQrScreen';
+import MesaiGecmisiScreen from '../screens/MesaiGecmisiScreen';
+import MesaiGecmisiGunScreen from '../screens/MesaiGecmisiGunScreen';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
@@ -25,6 +27,8 @@ export const AppNavigator = () => {
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
             <Stack.Screen name="UpdateProduct" component={UpdateProductScreen} />
             <Stack.Screen name="MesaiQr" component={MesaiQrScreen} />
+            <Stack.Screen name="MesaiGecmisi" component={MesaiGecmisiScreen} />
+            <Stack.Screen name="MesaiGecmisiGun" component={MesaiGecmisiGunScreen} />
         </Stack.Navigator>
     );
 };

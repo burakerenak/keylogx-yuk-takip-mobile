@@ -1,6 +1,6 @@
 import { api } from './client';
 import { ApiResponse } from '../types/api.types';
-import { MesaiDurumResponse, MesaiOkutRequest, MesaiOkutResponse } from '../types/mesai.types';
+import { MesaiDurumResponse, MesaiGecmisimRequest, MesaiGecmisimResponse, MesaiOkutRequest, MesaiOkutResponse } from '../types/mesai.types';
 
 /**
  * 4.4 Ana sayfa Mesai karti: acik kayit + bugunku calisma saati.
@@ -18,6 +18,16 @@ export const getMesaiDurum = async (): Promise<MesaiDurumResponse> => {
  */
 export const okut = async (body: MesaiOkutRequest): Promise<MesaiOkutResponse> => {
     const res = await api.post<ApiResponse<MesaiOkutResponse>>('/Mesai/Okut', body);
+
+    return res.data.data;
+};
+
+/**
+ * 4.4 Profilim > Mesai Gecmisim: oturumdaki kullanicinin kendi kayitlari (personel ve/veya surucu), fiyat yok.
+ * Govdesiz -> son 12 ay (yeniden eskiye, yalniz kaydi olan aylar); yil+ay -> o ayin gunleri (yeniden eskiye).
+ */
+export const getMesaiGecmisim = async (body: MesaiGecmisimRequest = {}): Promise<MesaiGecmisimResponse> => {
+    const res = await api.post<ApiResponse<MesaiGecmisimResponse>>('/Mesai/Gecmisim', body);
 
     return res.data.data;
 };

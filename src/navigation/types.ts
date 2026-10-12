@@ -17,6 +17,14 @@ export type AppStackParamList = {
     Profile: undefined,
     /** 4.4: QR ile mesai giris / cikis (kamera -> is tipi -> sonuc). */
     MesaiQr: undefined,
+    /** 4.4: Profilim > Mesai Gecmisim (son 12 ay). */
+    MesaiGecmisi: undefined,
+    /** 4.4: Mesai Gecmisim > ay detayi (gun gun kayitlar). */
+    MesaiGecmisiGun: {
+        yil: number
+        ay: number
+        donemAdi: string
+    },
     ChangePassword: undefined,
     UpdateProduct: {
         ambar: GetAmbarByIdResponse

@@ -3,7 +3,7 @@ import { Alert, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { ChevronRight, LockKeyhole, LogOut } from 'lucide-react-native';
+import { CalendarClock, ChevronRight, LockKeyhole, LogOut } from 'lucide-react-native';
 import BottomMenu from '../components/BottomMenu';
 import { deleteUser } from '../services/userService';
 import { useAuthStore } from '../store/authStore';
@@ -13,6 +13,7 @@ import { getMyProfile } from '../api/user';
 import { GetMyProfileResponse } from '../types/user.types';
 import { BilgiSatiri, Dugme, Kart, Yazi } from '../ui';
 import { SURUM_METNI } from '../surum';
+import { kullaniciTuru } from '../utils/kullanici';
 
 const c = theme.colors;
 
@@ -50,6 +51,7 @@ const ProfileScreen = () => {
     };
 
     const ad = profil?.nameSurname ?? user?.nameSurname ?? '';
+    const tur = kullaniciTuru();
 
     return (
         <View style={s.sayfa}>
@@ -79,6 +81,19 @@ const ProfileScreen = () => {
                                 : <BilgiSatiri etiket="Sürücü kaydı" deger={profil?.driverName} son />
                         }
                     </Kart>
+
+                    {
+                        // 4.4: kendi mesai kayitlari; yalniz personel ya da surucu kaydi olan kullanicida.
+                        tur.personel || tur.surucu
+                            ? (
+                                <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('MesaiGecmisi')} style={s.satirDugme}>
+                                    <CalendarClock size={22} color={c.teal} />
+                                    <Yazi tur="govdeKalin" style={{ flex: 1, fontSize: 16 }}>Mesai Geçmişim</Yazi>
+                                    <ChevronRight size={20} color="#8A93A3" />
+                                </TouchableOpacity>
+                            )
+                            : null
+                    }
 
                     <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('ChangePassword')} style={s.satirDugme}>
                         <LockKeyhole size={22} color={c.blue} />
