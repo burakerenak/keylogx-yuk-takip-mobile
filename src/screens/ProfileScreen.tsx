@@ -3,7 +3,7 @@ import { Alert, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { ChevronRight, LockKeyhole, LogOut } from 'lucide-react-native';
+import { CalendarClock, ChevronRight, LockKeyhole, LogOut } from 'lucide-react-native';
 import BottomMenu from '../components/BottomMenu';
 import { deleteUser } from '../services/userService';
 import { useAuthStore } from '../store/authStore';
@@ -13,6 +13,7 @@ import { getMyProfile } from '../api/user';
 import { GetMyProfileResponse } from '../types/user.types';
 import { BilgiSatiri, Dugme, Kart, Yazi } from '../ui';
 import { SURUM_METNI } from '../surum';
+import { kullaniciTuru } from '../utils/kullanici';
 
 const c = theme.colors;
 
@@ -50,6 +51,7 @@ const ProfileScreen = () => {
     };
 
     const ad = profil?.nameSurname ?? user?.nameSurname ?? '';
+    const tur = kullaniciTuru();
 
     return (
         <View style={s.sayfa}>
@@ -60,7 +62,7 @@ const ProfileScreen = () => {
                 <View style={s.ust}>
                     <View style={s.avatar}><Text style={s.avatarYazi}>{basHarfler(ad)}</Text></View>
                     <Text style={s.ad}>{ad}</Text>
-                    <Text style={s.alt}>{[profil?.driverName ? 'Sürücü' : null, profil?.companyName].filter(x => x).join(' · ')}</Text>
+                    <Text style={s.alt}>{[profil?.driverName ? 'Sürücü' : null, user?.personnelId ? 'Personel' : null, profil?.companyName].filter(x => x).join(' · ')}</Text>
                 </View>
 
                 <View style={{ padding: 16, gap: 14 }}>
@@ -69,8 +71,29 @@ const ProfileScreen = () => {
                         <BilgiSatiri etiket="E-posta" deger={profil?.email} />
                         <BilgiSatiri etiket="Telefon" deger={profil?.phone || profil?.driverPhone} />
                         <BilgiSatiri etiket="Şirket" deger={profil?.companyName} />
-                        <BilgiSatiri etiket="Sürücü kaydı" deger={profil?.driverName} son />
+                        {
+                            // 4.4: yalniz personel olan kullanicida surucu satiri yerine personel kaydi gosterilir; ikisi de olabilir.
+                            user?.personnelId
+                                ? <>
+                                    {user?.driverId ? <BilgiSatiri etiket="Sürücü kaydı" deger={profil?.driverName} /> : null}
+                                    <BilgiSatiri etiket="Personel kaydı" deger={user.personnelName} son />
+                                </>
+                                : <BilgiSatiri etiket="Sürücü kaydı" deger={profil?.driverName} son />
+                        }
                     </Kart>
+
+                    {
+                        // 4.4: kendi mesai kayitlari; yalniz personel ya da surucu kaydi olan kullanicida.
+                        tur.personel || tur.surucu
+                            ? (
+                                <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('MesaiGecmisi')} style={s.satirDugme}>
+                                    <CalendarClock size={22} color={c.teal} />
+                                    <Yazi tur="govdeKalin" style={{ flex: 1, fontSize: 16 }}>Mesai Geçmişim</Yazi>
+                                    <ChevronRight size={20} color="#8A93A3" />
+                                </TouchableOpacity>
+                            )
+                            : null
+                    }
 
                     <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('ChangePassword')} style={s.satirDugme}>
                         <LockKeyhole size={22} color={c.blue} />

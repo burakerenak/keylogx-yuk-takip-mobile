@@ -1,6 +1,6 @@
 import React from 'react';
-import { ActivityIndicator, StatusBar, StyleProp, StyleSheet, Text, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
-import { ChevronLeft } from 'lucide-react-native';
+import { ActivityIndicator, StatusBar, StyleProp, StyleSheet, Text, TextInput, TextInputProps, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
 import { theme } from '../theme/theme';
 
 /**
@@ -125,6 +125,31 @@ export const BilgiSatiri = ({ etiket, deger, son }: { etiket: string, deger?: Re
     </View>
 );
 
+// ---------------------------------------------------------------- Sifre kutusu (goz isareti)
+
+/**
+ * Sifre girisi + goz isareti (12.10.2026, Burak): kullanici girdigi sifreyi gorebilir.
+ * style kutunun gorunumu (ekranin kendi kutu stili); goz sag tarafta, kutunun icinde durur.
+ */
+export const SifreGirdisi = ({ style, ...props }: Omit<TextInputProps, 'secureTextEntry'>) => {
+    const [gorunur, setGorunur] = React.useState(false);
+
+    return (
+        <View style={{ justifyContent: 'center' }}>
+            <TextInput {...props} secureTextEntry={!gorunur} autoCapitalize="none" autoCorrect={false} style={[style, { paddingRight: 48 }]} />
+            <TouchableOpacity
+                onPress={() => setGorunur(!gorunur)}
+                style={s.goz}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={gorunur ? 'Şifreyi gizle' : 'Şifreyi göster'}
+            >
+                {gorunur ? <EyeOff size={20} color={c.muted} /> : <Eye size={20} color={c.muted} />}
+            </TouchableOpacity>
+        </View>
+    );
+};
+
 // ---------------------------------------------------------------- Ayrac
 
 export const Ayrac = ({ style }: { style?: StyleProp<ViewStyle> }) => <View style={[{ height: 1, backgroundColor: c.divider }, style]} />;
@@ -140,4 +165,5 @@ const s = StyleSheet.create({
     dugmeYazi: { fontSize: 16, fontWeight: '700' },
     bilgi: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 12 },
     bilgiCizgi: { borderBottomWidth: 1, borderBottomColor: c.divider },
+    goz: { position: 'absolute', right: 12, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
 });

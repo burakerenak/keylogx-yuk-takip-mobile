@@ -2,11 +2,18 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { Alert } from 'react-native';
 import { useLoadingStore } from '../store/loadingStore';
+import { API_URL } from '../config';
 
+declare module 'axios' {
+    interface AxiosRequestConfig {
+        /** true: hata olursa uyari penceresi gosterilmez (arka planda yenilenen ozetler icin). */
+        sessiz?: boolean;
+    }
+}
+
+/** Sunucu adresi src/config.ts'ten gelir (TEST derlemesi icin oradaki tek degeri degistirin). */
 export const api = axios.create({
-    baseURL: 'https://keylogxapi.ebbedev.com.tr',
-    // baseURL: 'http://192.168.1.6:7048',
-    // baseURL: 'http://149.0.252.220:60000'
+    baseURL: API_URL,
 });
 
 api.interceptors.request.use((config) => {
@@ -30,7 +37,8 @@ api.interceptors.response.use((response) => {
 
     // 👉 BUSINESS ERROR HANDLING
     if (res && res.isSuccess === false) {
-        Alert.alert('Hata', res.message || 'Bir hata oluştu');
+        if (!response.config?.sessiz)
+            Alert.alert('Hata', res.message || 'Bir hata oluştu');
 
         // reject ederek service layer'a düşmesini engelliyoruz
         return Promise.reject(res);
@@ -49,7 +57,7 @@ api.interceptors.response.use((response) => {
     if (error?.response?.status === 401) {
         useAuthStore.getState().signOut();
     }
-    else {
+    else if (!error?.config?.sessiz) {
         Alert.alert('Hata', message);
     }
 

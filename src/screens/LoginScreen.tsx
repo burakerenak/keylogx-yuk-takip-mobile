@@ -7,7 +7,7 @@ import AuthLayout from '../layouts/AuthLayout';
 import { theme } from '../theme/theme';
 import { deleteUser, saveUser } from '../services/userService';
 import notificationService from '../services/notificationService';
-import { Dugme } from '../ui';
+import { Dugme, SifreGirdisi } from '../ui';
 import { SURUM_METNI } from '../surum';
 
 const c = theme.colors;
@@ -69,27 +69,26 @@ export default function LoginScreen() {
                     <Image source={require('../assets/keylogx-logo.png')} style={s.logo} resizeMode="contain" />
                 </TouchableOpacity>
 
-                <Text style={s.baslik}>Sürücü Girişi</Text>
-                <Text style={s.alt}>Kullanıcı adı ve şifrenizle giriş yapın.</Text>
+                <Text style={s.baslik}>Kullanıcı Girişi</Text>
+                <Text style={s.alt}>Kullanıcı adınız ya da telefon numaranız ve şifrenizle giriş yapın.</Text>
             </View>
 
             <View style={s.form}>
-                <Text style={s.etiket}>Kullanıcı adı</Text>
+                <Text style={s.etiket}>Kullanıcı adı / Telefon</Text>
                 <TextInput
                     value={username}
                     onChangeText={setUsername}
                     autoCapitalize="none"
                     autoCorrect={false}
-                    placeholder="Kullanıcı adınız"
+                    placeholder="Kullanıcı adı ya da telefon no giriniz"
                     placeholderTextColor="#6F7C92"
                     style={s.kutu}
                 />
 
                 <Text style={[s.etiket, { marginTop: 14 }]}>Şifre</Text>
-                <TextInput
+                <SifreGirdisi
                     value={password}
                     onChangeText={setPassword}
-                    secureTextEntry
                     placeholder="Şifreniz"
                     placeholderTextColor="#6F7C92"
                     style={s.kutu}

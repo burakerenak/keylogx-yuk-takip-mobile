@@ -79,12 +79,19 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.ebbedevdrivermobile"
+    // TEST derlemesi (gradlew assembleRelease -PkeylogxTest): canli uygulamanin yanina ayri kurulur.
+    // Paket kimligi ".test" ekli, adi "Keylogx TEST". API adresi src/config.ts AKTIF_ORTAM ile secilir.
+    def keylogxTest = project.hasProperty("keylogxTest")
     defaultConfig {
         applicationId "com.ebbedev.cargotrackingmobile"
+        if (keylogxTest) {
+            applicationIdSuffix ".test"
+        }
+        manifestPlaceholders = [appLabel: keylogxTest ? "Keylogx TEST" : "@string/app_name"]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 8
-        versionName "4.3.1"
+        versionCode 9
+        versionName "4.4"
     }
     signingConfigs {
         debug {

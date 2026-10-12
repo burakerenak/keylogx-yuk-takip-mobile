@@ -44,7 +44,7 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Kamera, belge ve fotoğraf çekebilmek için kullanılmaktadır.</string>
+	<string>Mesai QR kodunu okutmak ve belge / fotoğraf çekebilmek için kamera kullanılır.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Konumunuz yalnızca uygulama açıkken, yükleme ve teslim kayıtlarında kullanılır. Uygulama arka planda konumunuzu almaz.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

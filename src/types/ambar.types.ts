@@ -336,6 +336,8 @@ export interface AmbarSetLoadEndDateRequest {
     lon: number | undefined
     /** 4.3: yuklemede yuku teslim eden kisi (siparisin Teslim Eden alani). */
     shippingDeliverer?: string
+    /** 4.4: sunucu, sipariste Musteri Irsaliye No doluysa musteri irsaliyesi fotografini da denetler. */
+    musteriIrsaliyeKontrolu?: boolean
 }
 
 export interface AmbarSetLoadEndDateResponse {

@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from '@react-navigation/native';
 import { theme } from "../theme/theme";
 import { AppStackParamList } from "../navigation/types";
+import { useKullaniciTuru } from "../utils/kullanici";
 
 interface Props {
     /** 0: Ana Sayfa, 1: Gorevlerim, 2: Profilim */
@@ -17,15 +18,19 @@ const sekmeler: { ad: string, ekran: 'Home' | 'Tasks' | 'Profile', Ikon: typeof 
     { ad: 'Profilim', ekran: 'Profile', Ikon: User },
 ];
 
-/** Alt menu (4.3, 09.10.2026): Ana Sayfa / Gorevlerim / Profilim. */
+/** Alt menu (4.3, 09.10.2026): Ana Sayfa / Gorevlerim / Profilim. 4.4: surucu kaydi olmayan (yalniz personel) kullanicida Gorevlerim gizlenir. */
 const BottomMenu = ({ activeIndex }: Props) => {
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+    const { surucu } = useKullaniciTuru();
 
     return (
         <SafeAreaView edges={['bottom']} style={s.kap}>
             <View style={s.satir}>
                 {
                     sekmeler.map((x, i) => {
+                        if (x.ekran === 'Tasks' && !surucu)
+                            return null;
+
                         const aktif = i === activeIndex;
                         const renk = aktif ? theme.colors.blue : '#6B7385';
 

@@ -137,7 +137,7 @@ export default function OrderScreen() {
             var location = await getCurrentLocation();
 
             // 4.3: Teslim Eden siparisin web ekranindaki alana yazilir.
-            await ambarSetLoadEndDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude, shippingDeliverer: _teslimEden });
+            await ambarSetLoadEndDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude, shippingDeliverer: _teslimEden, musteriIrsaliyeKontrolu: true });
         } catch {
             // Reddedildi: mesaj gosterildi, kanit ekrani acik kalir, surucu tekrar deneyebilir.
             return;
