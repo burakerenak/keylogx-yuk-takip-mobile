@@ -144,9 +144,10 @@ const s = StyleSheet.create({
     sayac: { flex: 1, borderRadius: 14, padding: 12, gap: 2 },
     sayi: { fontSize: 22, fontWeight: '700' },
     sayacYazi: { fontSize: 12, fontWeight: '600' },
-    filtreKap: { flexGrow: 0, backgroundColor: c.white, borderBottomWidth: 1, borderBottomColor: c.border },
+    // Sekme seridi altindaki liste tarafindan sikistirilmasin (flexShrink 0); buyuk yazi boyutunda sekmeler kirpiliyordu (15.10.2026).
+    filtreKap: { flexGrow: 0, flexShrink: 0, backgroundColor: c.white, borderBottomWidth: 1, borderBottomColor: c.border },
     filtreler: { gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
-    filtre: { height: 36, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: '#D5DAE3', backgroundColor: c.white, justifyContent: 'center' },
+    filtre: { minHeight: 36, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: '#D5DAE3', backgroundColor: c.white, justifyContent: 'center' },
     filtreAktif: { backgroundColor: c.ink, borderColor: c.ink },
     filtreYazi: { fontSize: 14, fontWeight: '600', color: c.inkSoft },
     liste: { padding: 16, gap: 12, paddingBottom: 24 },
