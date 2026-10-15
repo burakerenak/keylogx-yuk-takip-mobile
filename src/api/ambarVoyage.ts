@@ -1,6 +1,6 @@
 import { api } from './client';
 import { ApiResponse } from '../types/api.types';
-import { EndAmbarVoyageRequest, EndAmbarVoyageResponse, GetAmbarVoyageByIdRequest, GetAmbarVoyageByIdResponse, GetAmbarVoyageListRequest, GetAmbarVoyageListResponse, StartAmbarVoyageRequest, StartAmbarVoyageResponse } from '../types/ambarVoyage.types';
+import { EndAmbarVoyageRequest, EndAmbarVoyageResponse, GetAmbarVoyageByIdRequest, GetAmbarVoyageByIdResponse, GetAmbarVoyageListRequest, GetAmbarVoyageListResponse, SeferGuzergahRequest, SeferGuzergahResponse, StartAmbarVoyageRequest, StartAmbarVoyageResponse } from '../types/ambarVoyage.types';
 import { Alert } from 'react-native';
 
 export const getAmbarVoyageList = async (
@@ -35,4 +35,16 @@ export const endAmbarVoyage = async (
 
     Alert.alert(res.data.message ?? '');
     return res.data.data; // 👈 burada type-safe
+};
+
+/**
+ * Sefer > Guzergah Goster: teslim sirasi + sunucunun hesapladigi gercek yol cizgisi (yalniz gosterim).
+ * Sessiz: hata mesaji uyari penceresi yerine harita ekraninin kendisinde gosterilir.
+ */
+export const getSeferGuzergah = async (
+    body: SeferGuzergahRequest
+): Promise<SeferGuzergahResponse> => {
+    const res = await api.post<ApiResponse<SeferGuzergahResponse>>('/AmbarVoyage/Guzergah', body, { sessiz: true });
+
+    return res.data.data;
 };

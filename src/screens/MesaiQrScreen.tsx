@@ -29,7 +29,7 @@ type KameraIzni = 'bekliyor' | 'var' | 'reddedildi' | 'engellendi';
 
 type Mod =
     | { tur: 'kamera' }
-    | { tur: 'isTipi', qrMetni: string, lat: number, lon: number, noktaAdi: string }
+    | { tur: 'isTipi', qrMetni: string, lat: number, lon: number, dogruluk: number, noktaAdi: string }
     | { tur: 'sonuc', yanit: Extract<MesaiOkutResponse, { islem: 'GIRIS' | 'CIKIS' }> };
 
 const tarihMetni = (tarih: string | null | undefined) => {
@@ -107,14 +107,15 @@ export default function MesaiQrScreen() {
         ipucuZamani.current = setTimeout(() => setIpucu(undefined), 2500);
     };
 
-    const gonder = async (_qrMetni: string, _lat: number, _lon: number, _isTipi: IsTipi | null) => {
+    const gonder = async (_qrMetni: string, _lat: number, _lon: number, _dogruluk: number, _isTipi: IsTipi | null) => {
         setAsama('gonderiliyor');
 
         try {
-            const yanit = await okut({ qrMetni: _qrMetni, lat: _lat, lon: _lon, isTipi: _isTipi });
+            // Buraya yalniz konum alindiginda gelinir (izin yok / alinamadi durumunda okutma yapilmaz).
+            const yanit = await okut({ qrMetni: _qrMetni, lat: _lat, lon: _lon, isTipi: _isTipi, dogruluk: _dogruluk, konumDurumu: 'tamam' });
 
             if (yanit?.islem === 'IS_TIPI_GEREKLI') {
-                setMod({ tur: 'isTipi', qrMetni: _qrMetni, lat: _lat, lon: _lon, noktaAdi: yanit.noktaAdi });
+                setMod({ tur: 'isTipi', qrMetni: _qrMetni, lat: _lat, lon: _lon, dogruluk: _dogruluk, noktaAdi: yanit.noktaAdi });
                 setAsama('tarama');
                 return;
             }
@@ -155,7 +156,7 @@ export default function MesaiQrScreen() {
             return;
         }
 
-        await gonder(_qrMetni, konum.lat, konum.lon, null);
+        await gonder(_qrMetni, konum.lat, konum.lon, konum.dogruluk, null);
     };
 
     const scannerOutput = useBarcodeScannerOutput({
@@ -267,9 +268,9 @@ export default function MesaiQrScreen() {
             </Kart>
 
             <Dugme metin="Lojistik" tur="mavi" ikon={<Truck size={24} color={c.white} />} style={st.buyukDugme}
-                pasif={asama === 'gonderiliyor'} onPress={() => gonder(_m.qrMetni, _m.lat, _m.lon, 1)} />
+                pasif={asama === 'gonderiliyor'} onPress={() => gonder(_m.qrMetni, _m.lat, _m.lon, _m.dogruluk, 1)} />
             <Dugme metin="Ambalaj" tur="turkuaz" ikon={<Package size={24} color={c.white} />} style={st.buyukDugme}
-                pasif={asama === 'gonderiliyor'} onPress={() => gonder(_m.qrMetni, _m.lat, _m.lon, 2)} />
+                pasif={asama === 'gonderiliyor'} onPress={() => gonder(_m.qrMetni, _m.lat, _m.lon, _m.dogruluk, 2)} />
 
             <Dugme metin="Vazgeç" tur="cizgili" onPress={tekrarOkut} pasif={asama === 'gonderiliyor'} />
         </ScrollView>

@@ -59,6 +59,10 @@ export interface MesaiOkutRequest {
     lat: number | null
     lon: number | null
     isTipi: IsTipi | null
+    /** Konum dogrulugu (metre); konum alinamadiysa null. */
+    dogruluk?: number | null
+    /** Telefondaki konum durumu: alindi / izin yok / alinamadi. */
+    konumDurumu?: 'tamam' | 'izinYok' | 'alinamadi' | null
 }
 
 export type MesaiOkutResponse =

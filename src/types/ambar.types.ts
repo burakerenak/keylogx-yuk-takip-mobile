@@ -324,6 +324,10 @@ export interface AmbarSetLoadDateRequest {
     ambarId: string
     lat: number | undefined
     lon: number | undefined
+    /** Konum dogrulugu (metre); konum alinamadiysa null. */
+    dogruluk?: number | null
+    /** Telefondaki konum durumu: alindi / izin yok / alinamadi. */
+    konumDurumu?: 'tamam' | 'izinYok' | 'alinamadi' | null
 }
 
 export interface AmbarSetLoadDateResponse {
@@ -334,6 +338,10 @@ export interface AmbarSetLoadEndDateRequest {
     ambarId: string
     lat: number | undefined
     lon: number | undefined
+    /** Konum dogrulugu (metre); konum alinamadiysa null. */
+    dogruluk?: number | null
+    /** Telefondaki konum durumu: alindi / izin yok / alinamadi. */
+    konumDurumu?: 'tamam' | 'izinYok' | 'alinamadi' | null
     /** 4.3: yuklemede yuku teslim eden kisi (siparisin Teslim Eden alani). */
     shippingDeliverer?: string
     /** 4.4: sunucu, sipariste Musteri Irsaliye No doluysa musteri irsaliyesi fotografini da denetler. */
@@ -348,6 +356,10 @@ export interface AmbarSetDeliveryDateRequest {
     ambarId: string
     lat: number | undefined
     lon: number | undefined
+    /** Konum dogrulugu (metre); konum alinamadiysa null. */
+    dogruluk?: number | null
+    /** Telefondaki konum durumu: alindi / izin yok / alinamadi. */
+    konumDurumu?: 'tamam' | 'izinYok' | 'alinamadi' | null
 }
 
 export interface AmbarSetDeliveryDateResponse {
@@ -391,6 +403,10 @@ export interface AmbarSetDeliveryEndDateRequest {
     fileTypeId?: string
     lat: number | undefined
     lon: number | undefined
+    /** Konum dogrulugu (metre); konum alinamadiysa null. */
+    dogruluk?: number | null
+    /** Telefondaki konum durumu: alindi / izin yok / alinamadi. */
+    konumDurumu?: 'tamam' | 'izinYok' | 'alinamadi' | null
     /** 4.3: teslim alan kisi (siparisin Teslim Alan alani). */
     shippingReceiver?: string
 }

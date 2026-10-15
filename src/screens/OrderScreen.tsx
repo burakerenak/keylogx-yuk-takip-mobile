@@ -15,14 +15,13 @@ import { ArrowRight, LucideArrowBigRight, Map } from 'lucide-react-native';
 import ScrollView from '../components/ScrollView';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { saveAsDraftIrsaliye } from '../api/uyumsoft';
-import { Alert, Linking, PermissionsAndroid, Platform, StyleSheet, View } from 'react-native';
+import { Alert, Linking, StyleSheet, View } from 'react-native';
 import { Navigation } from 'lucide-react-native';
 import { Dugme, Etiket, EtiketTonu, Kart, Yazi } from '../ui';
 import Card from '../components/Card';
 import { ambarSetDeliveryDate, ambarSetDeliveryEndDate, ambarSetLoadDate, ambarSetLoadEndDate } from '../api/ambar';
 import KanitFotograflari from '../components/KanitFotograflari';
-import Geolocation from '@react-native-community/geolocation';
-import { check, PERMISSIONS, request, RESULTS } from 'react-native-permissions';
+import { anlikKonum, konumAlanlari } from '../utils/konum';
 
 export default function OrderScreen() {
     const route = useRoute<RouteProp<AppStackParamList, 'Order'>>();
@@ -114,9 +113,9 @@ export default function OrderScreen() {
 
     const onAmbarSetLoadDate = async (_ambarVoyageId: string, _ambarId: string) => {
         try {
-            var location = await getCurrentLocation();
+            const konum = konumAlanlari(await anlikKonum());
 
-            await ambarSetLoadDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude });
+            await ambarSetLoadDate({ ambarId: _ambarId, ...konum });
         } catch {
             // Sunucunun mesajini (or. "Yukleme adresine yakin degilsiniz: telefonunuz 902 m uzakta") baglanti katmani gosterir.
         }
@@ -134,10 +133,10 @@ export default function OrderScreen() {
 
     const yuklemeyiTamamla = async (_ambarVoyageId: string, _ambarId: string, _teslimEden: string) => {
         try {
-            var location = await getCurrentLocation();
+            const konum = konumAlanlari(await anlikKonum());
 
             // 4.3: Teslim Eden siparisin web ekranindaki alana yazilir.
-            await ambarSetLoadEndDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude, shippingDeliverer: _teslimEden, musteriIrsaliyeKontrolu: true });
+            await ambarSetLoadEndDate({ ambarId: _ambarId, ...konum, shippingDeliverer: _teslimEden, musteriIrsaliyeKontrolu: true });
         } catch {
             // Reddedildi: mesaj gosterildi, kanit ekrani acik kalir, surucu tekrar deneyebilir.
             return;
@@ -157,10 +156,10 @@ export default function OrderScreen() {
 
     const teslimiTamamla = async (_ambarVoyageId: string, _ambarId: string, _teslimAlan: string) => {
         try {
-            var location = await getCurrentLocation();
+            const konum = konumAlanlari(await anlikKonum());
 
             // Fotograflar onceden tek tek yuklendi; bu cagriya b64 gonderilmez. 4.3: Teslim Alan siparise yazilir.
-            await ambarSetDeliveryEndDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude, shippingReceiver: _teslimAlan });
+            await ambarSetDeliveryEndDate({ ambarId: _ambarId, ...konum, shippingReceiver: _teslimAlan });
         } catch {
             return;
         }
@@ -171,9 +170,9 @@ export default function OrderScreen() {
 
     const onAmbarSetDeliveryDate = async (_ambarVoyageId: string, _ambarId: string) => {
         try {
-            var location = await getCurrentLocation();
+            const konum = konumAlanlari(await anlikKonum());
 
-            await ambarSetDeliveryDate({ ambarId: _ambarId, lat: location?.latitude, lon: location?.longitude });
+            await ambarSetDeliveryDate({ ambarId: _ambarId, ...konum });
         } catch {
             // Mesaji baglanti katmani gosterir.
         }
@@ -226,56 +225,6 @@ export default function OrderScreen() {
         }
     };
 
-    const getCurrentLocation = async (): Promise<{
-        latitude: number;
-        longitude: number;
-        accuracy: number;
-    } | undefined> => {
-        try {
-            if (Platform.OS === 'android') {
-                const result = await PermissionsAndroid.requestMultiple([
-                    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-                    PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-                ]);
-
-                if (!(result[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED && result[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED))
-                    return undefined;
-            }
-            else {
-                const result = await request(
-                    PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
-                );
-
-                var granted = result === RESULTS.GRANTED;
-
-                if (!granted)
-                    return undefined;
-            }
-
-            return await new Promise(resolve => {
-                Geolocation.getCurrentPosition(
-                    position => {
-                        resolve({
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude,
-                            accuracy: position.coords.accuracy,
-                        });
-                    },
-                    () => {
-                        resolve(undefined);
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 20000,
-                        maximumAge: 0,
-                    },
-                );
-            });
-        } catch {
-            return undefined;
-        }
-    };
-
     const durumTonu = (item: GetAmbarVoyageByIdResponseAmbar): EtiketTonu =>
         item.deliveryEndDate ? 'yesil' : item.loadEndDate ? 'turkuaz' : item.loadDate ? 'mavi' : 'amber';
 
@@ -283,6 +232,18 @@ export default function OrderScreen() {
         <Layout title={(data?.refNo ?? '') + ' Yüklerim'} hasPadding={false} canGoBack>
             <Box flexGrow={1}>
                 <ScrollView>
+                    {/* Guzergah Goster: listenin en basinda; teslim sirasi + gercek yol cizgisi haritada (yalniz gosterim). */}
+                    {
+                        data && (
+                            <Dugme
+                                tur="yumusak"
+                                metin="Güzergah Göster"
+                                ikon={<Map size={20} color={theme.colors.blueDark} />}
+                                onPress={() => navigation.navigate('Map', { ambarVoyageId: route.params.ambarVoyageId, refNo: data.refNo })}
+                                style={{ marginBottom: 14 }}
+                            />
+                        )
+                    }
                     {
                         data?.ambars?.map((item, index) => {
                             const surer = data.startDate && !data.endDate;
