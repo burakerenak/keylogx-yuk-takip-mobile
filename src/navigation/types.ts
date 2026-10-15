@@ -8,8 +8,10 @@ export type AppStackParamList = {
     Detail: {
         ambarId: string
     },
+    /** Sefer > Guzergah Goster: teslim sirasi + gercek yol cizgisi (yalniz gosterim). refNo baslikta gorunur. */
     Map: {
         ambarVoyageId: string
+        refNo?: string
     },
     Order: {
         ambarVoyageId: string

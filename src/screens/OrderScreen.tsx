@@ -283,6 +283,18 @@ export default function OrderScreen() {
         <Layout title={(data?.refNo ?? '') + ' Yüklerim'} hasPadding={false} canGoBack>
             <Box flexGrow={1}>
                 <ScrollView>
+                    {/* Guzergah Goster: listenin en basinda; teslim sirasi + gercek yol cizgisi haritada (yalniz gosterim). */}
+                    {
+                        data && (
+                            <Dugme
+                                tur="yumusak"
+                                metin="Güzergah Göster"
+                                ikon={<Map size={20} color={theme.colors.blueDark} />}
+                                onPress={() => navigation.navigate('Map', { ambarVoyageId: route.params.ambarVoyageId, refNo: data.refNo })}
+                                style={{ marginBottom: 14 }}
+                            />
+                        )
+                    }
                     {
                         data?.ambars?.map((item, index) => {
                             const surer = data.startDate && !data.endDate;

@@ -155,3 +155,36 @@ export interface EndAmbarVoyageRequest {
 export interface EndAmbarVoyageResponse {
 
 }
+
+/** Sefer guzergahi (POST /AmbarVoyage/Guzergah). Sira gonderilmez; kayitli teslim sirasiyla gelir. */
+export interface SeferGuzergahRequest {
+    ambarVoyageId: string
+}
+
+export interface SeferGuzergahDurak {
+    ambarId: string
+    refNo?: string | null
+    sira: number
+    /** Teslim sirasinda elle 1. siraya alinmis durak ("Ilk teslim"). */
+    elleIlkSira: boolean
+    teslimFirmasi?: string | null
+    ilIlce?: string | null
+    /** Konumu olmayan durakta null: haritada isaretlenmez, cizgisi gelmez. */
+    lat?: number | null
+    lon?: number | null
+    /** Onceki noktadan bu duraga bacak mesafesi. */
+    km?: number | null
+    sureDk?: number | null
+}
+
+export interface SeferGuzergahResponse {
+    /** Yukleme noktasi. */
+    baslangicLat?: number | null
+    baslangicLon?: number | null
+    baslangicAdi?: string | null
+    duraklar: SeferGuzergahDurak[]
+    toplamKm: number
+    toplamSureDk?: number | null
+    /** Bacak bacak gercek yol cizgisi; her bacak [[enlem, boylam], ...]. Yalniz konumlu bacaklar, sirayla. */
+    cizgiler: number[][][]
+}
