@@ -71,3 +71,10 @@ export const saattenBeri = (saat: string | null | undefined): string => {
 
     return `${saat}'${ek}`;
 };
+
+/** 4.6 bulunma eki: "18:30" -> "18:30'da", "08:00" -> "08:00'de", "13:40" -> "13:40'ta" (ayrilma ekinin "n"siz hali). */
+export const saatte = (saat: string | null | undefined): string => {
+    const beri = saattenBeri(saat);
+
+    return beri ? beri.slice(0, -1) : '';
+};

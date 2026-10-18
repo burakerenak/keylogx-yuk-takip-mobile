@@ -9,6 +9,7 @@ import { getMesaiGecmisim } from '../api/mesai';
 import { MesaiGecmisGun, MesaiKaydiOzet } from '../types/mesai.types';
 import { Ayrac, EkranBaslik, Etiket, Kart, Yazi } from '../ui';
 import { gunBasligi, sureMetni } from '../utils/mesai';
+import { paraMetni } from '../utils/mesaiPlanlama';
 
 const c = theme.colors;
 
@@ -20,10 +21,14 @@ const saatAraligi = (k: MesaiKaydiOzet): string => {
     return `${k.girisSaati} – ${k.durumAdi}`;
 };
 
-/** Tek mesai kaydi satiri: nokta (personelde is tipi), saat araligi, sure, ek mesai, durum etiketi. */
+/**
+ * Tek mesai kaydi satiri: nokta (personelde is tipi), saat araligi, sure, ek mesai, durum etiketi.
+ * 4.6: kisinin kendi kaydinda ucret (personelUcret) geliyorsa ek mesai satirinin sagida TL.
+ */
 const KayitSatiri = ({ k }: { k: MesaiKaydiOzet }) => {
     const baslik = k.tur === 1 && k.isTipiAdi ? `${k.noktaAdi} · ${k.isTipiAdi}` : k.noktaAdi;
     const sureVar = !!k.cikisSaati || k.sureDk > 0;
+    const ucretVar = typeof k.personelUcret === 'number' && k.personelUcret > 0;
 
     return (
         <View style={s.kayit}>
@@ -36,7 +41,16 @@ const KayitSatiri = ({ k }: { k: MesaiKaydiOzet }) => {
                 <Yazi tur="govde" style={{ color: c.inkSoft, fontVariant: ['tabular-nums'] }}>{saatAraligi(k)}</Yazi>
                 {sureVar ? <Yazi tur="kucukKalin">{sureMetni(k.sureDk)}</Yazi> : null}
             </View>
-            {k.ekDk > 0 ? <Yazi tur="kucuk" style={{ color: c.amberDark }}>Ek mesai {sureMetni(k.ekDk)}</Yazi> : null}
+            {
+                k.ekDk > 0 || ucretVar
+                    ? (
+                        <View style={s.kayitAlt}>
+                            {k.ekDk > 0 ? <Yazi tur="kucuk" style={{ color: c.amberDark }}>Ek mesai {sureMetni(k.ekDk)}</Yazi> : <View />}
+                            {ucretVar ? <Yazi tur="kucukKalin" style={{ color: c.ink }}>{paraMetni(k.personelUcret)}</Yazi> : null}
+                        </View>
+                    )
+                    : null
+            }
         </View>
     );
 };

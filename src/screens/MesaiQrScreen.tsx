@@ -10,10 +10,12 @@ import { Boxes, CameraOff, Info, Package, Truck } from 'lucide-react-native';
 import { AppStackParamList } from '../navigation/types';
 import { theme } from '../theme/theme';
 import { BilgiSatiri, Dugme, EkranBaslik, Etiket, Kart, Yazi } from '../ui';
-import { okut } from '../api/mesai';
+import { getMesaiDurum, okut } from '../api/mesai';
 import { IsTipi, MesaiKaydiOzet, MesaiOkutResponse } from '../types/mesai.types';
 import { anlikKonum } from '../utils/konum';
-import { sureMetni } from '../utils/mesai';
+import { saatte, sureMetni } from '../utils/mesai';
+import { kullaniciTuru } from '../utils/kullanici';
+import { adlariBirlestir, anaSayfaKartlari, isTipiBuyuk, isTipiRengi, KART_ADLARI } from '../utils/mesaiPlanlama';
 
 const c = theme.colors;
 
@@ -30,7 +32,19 @@ type KameraIzni = 'bekliyor' | 'var' | 'reddedildi' | 'engellendi';
 type Mod =
     | { tur: 'kamera' }
     | { tur: 'isTipi', qrMetni: string, lat: number, lon: number, dogruluk: number, noktaAdi: string }
-    | { tur: 'sonuc', yanit: Extract<MesaiOkutResponse, { islem: 'GIRIS' | 'CIKIS' }> };
+    /** acilanKartlar: GIRIS / DEGISTI sonrasi Mesai/Durum'dan; "Görevlerim açıldı" satiri (eski sunucuda undefined). */
+    | { tur: 'sonuc', yanit: OkutSonucu, acilanKartlar?: string[] };
+
+type OkutSonucu = Exclude<MesaiOkutResponse, { islem: 'IS_TIPI_GEREKLI' }>;
+
+const SONUC_BASLIKLARI: Record<OkutSonucu['islem'], string> = {
+    GIRIS: 'Mesainiz başlamıştır',
+    CIKIS: 'Mesainiz sonlanmıştır',
+    DEGISTI: 'Yer / iş değişti',
+};
+
+/** Arac kaydi mi (surucu kaydi ya da 4.6 personelin arac okutmasi): etiket "Araç", is tipi yok. */
+const aracMi = (k: MesaiKaydiOzet) => k.tur === 2 || k.noktaTuru === 'Araç';
 
 const tarihMetni = (tarih: string | null | undefined) => {
     if (!tarih) return '';
@@ -41,11 +55,14 @@ const tarihMetni = (tarih: string | null | undefined) => {
 };
 
 /**
- * QR Okut (4.4, 11.10.2026): mesai giris / cikis.
+ * QR Okut (4.4, 11.10.2026; 4.6 Faz 2 18.10.2026): mesai giris / cikis / yer degisikligi.
  *
  * Akis: kamera -> ilk gecerli "KXQR:" okumasi -> konum -> Mesai/Okut.
- * - Personel girisinde sunucu IS_TIPI_GEREKLI doner: Lojistik / Ambalaj secilip ayni istek isTipi ile tekrarlanir.
- * - GIRIS / CIKIS: sonuc ekrani (saat sunucudan). Personel normal + ek mesai, surucu sure gorur; fiyat yok.
+ * - 4.6: is tipi sorulmaz (depoda Lojistik / Ambalaj QR'dan gelir). Yalniz eski sunucu IS_TIPI_GEREKLI donerse
+ *   Lojistik / Ambalaj secimi acilir ve ayni istek isTipi ile tekrarlanir (geriye uyum).
+ * - GIRIS / CIKIS: sonuc ekrani (saat sunucudan). Personel normal + ek mesai, surucu sure gorur.
+ * - 4.6 DEGISTI ("Yer / iş değişti"): farkli QR okutuldu; kapanan kaydin ozeti + yeni mesai.
+ * - GIRIS / DEGISTI sonrasi Mesai/Durum sessizce okunur; gorev yetkisiyle acilan kartlar ("Görevlerim açıldı") gosterilir.
  * - Konum izni yoksa okutma yapilmaz. Kamera izni yoksa Ayarlar'a yonlendirilir.
  * - Hata (gecersiz QR, uzak konum...) baglanti katmaninda uyari olarak gosterilir; tarama "Tekrar Okut" ile surer
  *   (ayni QR'in uyariyi art arda acmamasi icin otomatik yeniden tarama yapilmaz).
@@ -107,6 +124,25 @@ export default function MesaiQrScreen() {
         ipucuZamani.current = setTimeout(() => setIpucu(undefined), 2500);
     };
 
+    /** Mesai acildiktan sonra gorev yetkisiyle gorunen kartlar (sessiz; hata olursa satir gosterilmez). */
+    const acilanKartlariOku = async (_yanit: OkutSonucu) => {
+        try {
+            const durum = await getMesaiDurum();
+
+            if (durum?.kartlar === undefined || durum?.kartlar === null)
+                return; // eski sunucu: kart bilgisi yok
+
+            const { surucu, personel } = kullaniciTuru();
+            const karar = anaSayfaKartlari({ kartlar: durum.kartlar, acikKayitVar: true, surucu, personel });
+            const adlar = [karar.gorevlerim && surucu ? KART_ADLARI.Gorevlerim : null, karar.mesaiPlanlama ? KART_ADLARI.MesaiPlanlama : null]
+                .filter(Boolean) as string[];
+
+            setMod(onceki => (onceki.tur === 'sonuc' && onceki.yanit === _yanit ? { ...onceki, acilanKartlar: adlar } : onceki));
+        } catch {
+            // Sessiz istek.
+        }
+    };
+
     const gonder = async (_qrMetni: string, _lat: number, _lon: number, _dogruluk: number, _isTipi: IsTipi | null) => {
         setAsama('gonderiliyor');
 
@@ -120,9 +156,13 @@ export default function MesaiQrScreen() {
                 return;
             }
 
-            if (yanit?.islem === 'GIRIS' || yanit?.islem === 'CIKIS') {
+            if (yanit?.islem === 'GIRIS' || yanit?.islem === 'CIKIS' || yanit?.islem === 'DEGISTI') {
                 setMod({ tur: 'sonuc', yanit });
                 setAsama('tarama');
+
+                if (yanit.islem !== 'CIKIS')
+                    acilanKartlariOku(yanit);
+
                 return;
             }
 
@@ -250,7 +290,7 @@ export default function MesaiQrScreen() {
                     {
                         kameraHatasi
                             ? <Yazi tur="govde" style={{ color: c.red, textAlign: 'center' }}>Kamera açılamadı: {kameraHatasi}</Yazi>
-                            : <Yazi tur="govde" style={{ textAlign: 'center', color: c.inkSoft }}>Depodaki ya da araçtaki mesai QR kodunu çerçevenin içine getirin.</Yazi>
+                            : <Yazi tur="govde" style={{ textAlign: 'center', color: c.inkSoft }}>Bulunduğunuz yerdeki (depo, ofis ya da araç) mesai QR kodunu çerçevenin içine getirin.</Yazi>
                     }
                     <Yazi tur="kucuk" style={{ textAlign: 'center' }}>Saat sunucudan alınır; konumunuz okutma anında kontrol edilir.</Yazi>
                     {asama === 'hata' ? <Dugme metin="Tekrar Okut" onPress={tekrarOkut} style={{ marginTop: 4 }} /> : null}
@@ -277,27 +317,64 @@ export default function MesaiQrScreen() {
     );
 
     const sonucEkrani = (_m: Extract<Mod, { tur: 'sonuc' }>) => {
-        const { islem, kayit, kapatilanDepoKaydi } = _m.yanit;
+        const { islem, kayit } = _m.yanit;
+        // Faz 2 kapatilanKayit; eski sunucu yalniz kapatilanDepoKaydi gonderir (ikisi ayni deger).
+        const kapatilan = _m.yanit.kapatilanKayit ?? _m.yanit.kapatilanDepoKaydi ?? null;
+        const acilanMetni = _m.acilanKartlar?.length ? `${adlariBirlestir(_m.acilanKartlar)} açıldı` : null;
+
+        if (islem === 'DEGISTI')
+            return (
+                <ScrollView contentContainerStyle={st.govde}>
+                    {
+                        kapatilan
+                            ? (
+                                <Kart style={{ gap: 8 }}>
+                                    <Etiket metin="Yer / iş değişti" ton="mor" />
+                                    <Yazi tur="govdeKalin" style={{ fontWeight: '700' }}>{kapatilan.noktaAdi} {saatte(kapatilan.cikisSaati)} kapandı</Yazi>
+                                    {kapatilan.isTipiAdi && !aracMi(kapatilan) ? <Yazi tur="kucuk">{kapatilan.isTipiAdi}</Yazi> : null}
+                                    <KayitOzeti kayit={kapatilan} />
+                                </Kart>
+                            )
+                            : <Kart><Etiket metin="Yer / iş değişti" ton="mor" /></Kart>
+                    }
+
+                    <Kart style={{ alignItems: 'center', gap: 8, paddingVertical: 22 }}>
+                        <Etiket metin="Yeni mesai" ton="yesil" />
+                        {kayit.isTipiAdi && !aracMi(kayit) ? <IsTipiRozeti ad={kayit.isTipiAdi} /> : null}
+                        <Text style={st.buyukSaat}>{kayit.girisSaati}</Text>
+                        <Yazi tur="govdeKalin" style={{ textAlign: 'center' }}>{kayit.noktaAdi}</Yazi>
+                        <Yazi tur="kucuk" style={{ textAlign: 'center' }}>{kayit.girisSaati} itibarıyla başladı · {tarihMetni(kayit.tarih)}</Yazi>
+                        {acilanMetni ? <Yazi tur="kucukKalin" style={{ color: c.greenDark, textAlign: 'center' }}>{acilanMetni}</Yazi> : null}
+                    </Kart>
+
+                    <Yazi tur="kucuk" style={{ textAlign: 'center' }}>Mesai bitince aynı QR kodunu tekrar okutun.</Yazi>
+
+                    <Dugme metin="Tamam" tur="turkuaz" onPress={() => navigation.navigate('Home')} style={{ marginTop: 4 }} />
+                </ScrollView>
+            );
+
         const giris = islem === 'GIRIS';
-        const surucu = kayit.tur === 2;
+        const arac = aracMi(kayit);
         const saat = giris ? kayit.girisSaati : (kayit.cikisSaati ?? '');
 
         return (
             <ScrollView contentContainerStyle={st.govde}>
                 <Kart style={{ alignItems: 'center', gap: 8, paddingVertical: 24 }}>
                     <Etiket metin={giris ? 'Mesainiz başlamıştır' : 'Mesainiz sonlanmıştır'} ton={giris ? 'yesil' : 'mavi'} />
+                    {giris && kayit.isTipiAdi && !arac ? <IsTipiRozeti ad={kayit.isTipiAdi} /> : null}
                     <Text style={st.buyukSaat}>{saat}</Text>
                     <Yazi tur="govdeKalin" style={{ textAlign: 'center' }}>{giris ? 'Giriş' : 'Çıkış'} · {kayit.noktaAdi}</Yazi>
                     <Yazi tur="kucuk">{tarihMetni(kayit.tarih)}</Yazi>
+                    {giris && acilanMetni ? <Yazi tur="kucukKalin" style={{ color: c.greenDark, textAlign: 'center' }}>{acilanMetni}</Yazi> : null}
                 </Kart>
 
                 <Kart style={{ paddingVertical: 4 }}>
-                    <BilgiSatiri etiket={surucu ? 'Araç' : 'QR noktası'} deger={kayit.noktaAdi} />
-                    {!surucu && kayit.isTipiAdi ? <BilgiSatiri etiket="İş tipi" deger={kayit.isTipiAdi} /> : null}
+                    <BilgiSatiri etiket={arac ? 'Araç' : (kayit.noktaTuru === 'Ofis' ? 'Ofis' : 'QR noktası')} deger={kayit.noktaAdi} />
+                    {!arac && kayit.isTipiAdi ? <BilgiSatiri etiket="İş tipi" deger={kayit.isTipiAdi} /> : null}
                     <BilgiSatiri etiket="Giriş" deger={kayit.girisSaati} son={giris} />
                     {!giris ? <BilgiSatiri etiket="Çıkış" deger={kayit.cikisSaati} /> : null}
                     {
-                        !giris && (surucu
+                        !giris && (kayit.tur === 2
                             ? <BilgiSatiri etiket="Süre" deger={sureMetni(kayit.sureDk)} son />
                             : <>
                                 <BilgiSatiri etiket="Normal" deger={sureMetni(kayit.normalDk)} />
@@ -306,7 +383,8 @@ export default function MesaiQrScreen() {
                     }
                 </Kart>
 
-                {kapatilanDepoKaydi ? <KapatilanDepoKaydi kayit={kapatilanDepoKaydi} /> : null}
+                {/* Eski sunucu: arac QR'i acik depo kaydini kapattiysa GIRIS ile birlikte gelir (Faz 2'de DEGISTI). */}
+                {giris && kapatilan ? <KapatilanDepoKaydi kayit={kapatilan} /> : null}
 
                 {
                     giris
@@ -323,7 +401,7 @@ export default function MesaiQrScreen() {
         <View style={st.sayfa}>
             <SafeAreaView edges={['top']} style={{ backgroundColor: c.white }} />
             <EkranBaslik
-                baslik={mod.tur === 'sonuc' ? (mod.yanit.islem === 'GIRIS' ? 'Mesainiz başlamıştır' : 'Mesainiz sonlanmıştır') : mod.tur === 'isTipi' ? 'İş tipi seçin' : 'QR Okut'}
+                baslik={mod.tur === 'sonuc' ? SONUC_BASLIKLARI[mod.yanit.islem] : mod.tur === 'isTipi' ? 'İş tipi seçin' : 'QR Okut'}
                 altBaslik={mod.tur === 'kamera' ? 'Mesai giriş / çıkış' : undefined}
                 onGeri={() => navigation.goBack()}
             />
@@ -353,6 +431,29 @@ const KapatilanDepoKaydi = ({ kayit }: { kayit: MesaiKaydiOzet }) => (
     </Kart>
 );
 
+/** 4.6 Buyuk harfli is tipi rozeti: LOJİSTİK (mavi) / AMBALAJ (turuncu). */
+const IsTipiRozeti = ({ ad }: { ad: string }) => (
+    <View style={[st.isTipi, { backgroundColor: isTipiRengi(ad) }]} accessibilityLabel={`İş tipi ${ad}`}>
+        <Text style={st.isTipiYazi}>{isTipiBuyuk(ad)}</Text>
+    </View>
+);
+
+/** 4.6 DEGISTI: kapanan kaydin saat / sure ozeti (surucu kaydinda yalniz sure). */
+const KayitOzeti = ({ kayit }: { kayit: MesaiKaydiOzet }) => (
+    <View>
+        <BilgiSatiri etiket="Saat" deger={`${kayit.girisSaati} – ${kayit.cikisSaati ?? ''}`} />
+        <BilgiSatiri etiket="Süre" deger={sureMetni(kayit.sureDk)} son={kayit.tur === 2} />
+        {
+            kayit.tur === 2
+                ? null
+                : <>
+                    <BilgiSatiri etiket="Normal" deger={sureMetni(kayit.normalDk)} />
+                    <BilgiSatiri etiket="Ek mesai" deger={<Text style={{ color: '#6D28D9' }}>{sureMetni(kayit.ekDk)}</Text>} son />
+                </>
+        }
+    </View>
+);
+
 const KOSE = 34;
 const KALINLIK = 5;
 
@@ -377,4 +478,6 @@ const st = StyleSheet.create({
     altPanel: { backgroundColor: c.white, padding: 18, gap: 8, borderTopWidth: 1, borderTopColor: c.border },
     buyukDugme: { minHeight: 76, borderRadius: 18 },
     buyukSaat: { fontSize: 56, fontWeight: '800', color: c.ink, letterSpacing: 1 },
+    isTipi: { paddingHorizontal: 14, paddingVertical: 4, borderRadius: 10 },
+    isTipiYazi: { fontSize: 20, fontWeight: '800', letterSpacing: 1.2, color: c.white },
 });

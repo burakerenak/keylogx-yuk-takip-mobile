@@ -1,11 +1,13 @@
 /**
- * 4.4 QR mesai (Faz 1b sozlesmesi, 11.10.2026). Mobil yanitlarda fiyat / ucret YOKTUR.
+ * 4.4 QR mesai (Faz 1b sozlesmesi, 11.10.2026).
+ * 4.6 Faz 2 (18.10.2026): gorev yetkisine bagli kartlar, DEGISTI (yer / is degisti), alacak ve kayit ucreti,
+ * Ek Mesai Talepleri (Mesai Planlama). Yeni alanlarin hepsi istege bagli: eski sunucu gondermezse eski davranis.
  */
 
-/** 1 Personel (depo QR'i, KXQR:N), 2 Surucu (arac QR'i, KXQR:A). */
+/** 1 Personel (depo / ofis QR'i ya da personelin arac okutmasi), 2 Surucu (arac QR'i, KXQR:A). */
 export type MesaiTuru = 1 | 2;
 
-/** 1 Lojistik, 2 Ambalaj (yalniz personel girisinde). */
+/** 1 Lojistik, 2 Ambalaj (yalniz depo kaydinda; Faz 2'de QR'dan gelir). */
 export type IsTipi = 1 | 2;
 
 /** 1 Acik, 2 Tamam, 3 Eksik cikis. */
@@ -30,6 +32,10 @@ export interface MesaiKaydiOzet {
     sureDk: number
     durum: MesaiKaydiDurum
     durumAdi: string
+    /** 4.6: "Depo" / "Ofis" / "Araç" (eski sunucuda yok). */
+    noktaTuru?: string | null
+    /** 4.6: yalniz kisinin kendi kaydinda (Mesai/Gecmisim); ucret kaydi yoksa null. */
+    personelUcret?: number | null
 }
 
 export interface MesaiDurumu {
@@ -44,6 +50,9 @@ export interface BugunCalismaSaati {
     bitis: string | null
 }
 
+/** 4.6: Durum.kartlar degerleri. Bilinmeyen deger gelirse yok sayilir. */
+export type MobilKart = 'Gorevlerim' | 'MesaiPlanlama';
+
 export interface MesaiDurumResponse {
     /** Kullanici personele bagliysa dolu. */
     personel: MesaiDurumu | null
@@ -52,12 +61,18 @@ export interface MesaiDurumResponse {
     bugunCalismaSaati: BugunCalismaSaati | null
     /** "yyyy-MM-ddTHH:mm:ss": yanit anindaki sunucu saati; sayac telefon saatinden bagimsiz olsun diye fark hesaplanir. */
     sunucuZamani: string
+    /**
+     * 4.6: gorev yetkisinden gelen mobil kartlar ("Gorevlerim", "MesaiPlanlama"); mesai acik olsun olmasin doner,
+     * gosterme karari mobilde (yalniz acik kayit varken). Eski sunucuda alan yoktur (undefined).
+     */
+    kartlar?: string[] | null
 }
 
 export interface MesaiOkutRequest {
     qrMetni: string
     lat: number | null
     lon: number | null
+    /** Faz 2 sunucusu yok sayar (is tipi QR'dan gelir); eski sunucunun IS_TIPI_GEREKLI akisi icin kalir. */
     isTipi: IsTipi | null
     /** Konum dogrulugu (metre); konum alinamadiysa null. */
     dogruluk?: number | null
@@ -65,9 +80,21 @@ export interface MesaiOkutRequest {
     konumDurumu?: 'tamam' | 'izinYok' | 'alinamadi' | null
 }
 
+/**
+ * GIRIS / DEGISTI: kayit = acilan kayit; CIKIS: kayit = kapanan kayit.
+ * 4.6 DEGISTI: farkli QR okutuldu, onceki kayit o saatte kapandi (kapatilanKayit), yenisi acildi.
+ * IS_TIPI_GEREKLI yalniz eski sunucuda doner (Faz 2'de is tipi QR'dan gelir).
+ */
 export type MesaiOkutResponse =
     | { islem: 'IS_TIPI_GEREKLI', noktaAdi: string }
-    | { islem: 'GIRIS' | 'CIKIS', kayit: MesaiKaydiOzet, kapatilanDepoKaydi: MesaiKaydiOzet | null };
+    | {
+        islem: 'GIRIS' | 'CIKIS' | 'DEGISTI'
+        kayit: MesaiKaydiOzet
+        /** 4.6: DEGISTI'de kapanan kayit. */
+        kapatilanKayit?: MesaiKaydiOzet | null
+        /** Eski alan (Faz 1b): arac QR'i acik depo kaydini kapattiysa; Faz 2'de kapatilanKayit ile ayni deger. */
+        kapatilanDepoKaydi?: MesaiKaydiOzet | null
+    };
 
 /** Mesai/Gecmisim: govdesiz -> son 12 ay ozeti; yil+ay -> o ayin gunleri. */
 export interface MesaiGecmisimRequest {
@@ -85,6 +112,10 @@ export interface MesaiGecmisAy {
     normalDk: number
     ekDk: number
     eksikCikis: number
+    /** 4.6: o ayin ek mesai alacagi (TL; kisinin kendi personel kayitlarinin ucret toplami). Eski sunucuda yok. */
+    alacak?: number | null
+    /** 4.6: "Açık" (odeme fazinda "Kapandı"). */
+    donemDurumu?: string | null
 }
 
 export interface MesaiGecmisGun {
@@ -101,4 +132,112 @@ export interface MesaiGecmisGun {
 export interface MesaiGecmisimResponse {
     aylar: MesaiGecmisAy[]
     gunler: MesaiGecmisGun[]
+}
+
+// ---------------------------------------------------------------- 4.6 Ek Mesai Talepleri (Mesai Planlama)
+
+export interface MesaiTalebiDepo {
+    mesaiNoktasiId: string
+    ad: string
+}
+
+/** Musteri · Bolum · PO · PO No satiri (CompanyPo). */
+export interface MesaiPoSatiri {
+    customerId: string
+    customerName: string
+    divisionName: string | null
+    poName: string | null
+    poNo: string | null
+    companyPoId: string
+    etiket: string
+}
+
+export interface MesaiTalebiPersonel {
+    personnelId: string
+    ad: string
+}
+
+export interface MesaiTalebiSecenekler {
+    depolar: MesaiTalebiDepo[]
+    poSatirlari: MesaiPoSatiri[]
+    /** ["08:00-18:00", ...] isletmenin talep saat araliklari. */
+    araliklar: string[]
+    /** Depo yetkili gorevlerdeki personel (isimle ayirma icin). */
+    personeller: MesaiTalebiPersonel[]
+}
+
+/** PLAN = tarih >= bugun, TAMAM = tarih < bugun (yeniden eskiye). */
+export type MesaiTalebiDurumu = 'PLAN' | 'TAMAM';
+
+export interface MesaiTalebiListeRequest {
+    /** "yyyy-MM-dd" */
+    baslangic?: string
+    bitis?: string
+    durum?: MesaiTalebiDurumu
+}
+
+export interface MesaiTalebiAyrilan {
+    personnelId: string
+    ad: string
+    geldi: boolean
+}
+
+export interface MesaiTalebiYerlesen {
+    mesaiKaydiId: string
+    personnelId: string
+    ad: string
+    faturaAraligi: string
+    faturaDk: number
+}
+
+export interface MesaiTalebiItem {
+    mesaiTalebiId: string
+    /** "yyyy-MM-dd" */
+    tarih: string
+    /** "dd.MM.yyyy" */
+    tarihStr: string
+    mesaiNoktasiId: string
+    depoAdi: string
+    companyPoId: string
+    poEtiketi: string
+    customerName: string
+    divisionName: string | null
+    poName: string | null
+    poNo: string | null
+    kisiSayisi: number
+    /** "HH:mm" */
+    baslangic: string
+    bitis: string
+    /** "18:00–22:00" */
+    aralik: string
+    ayrilanlar: MesaiTalebiAyrilan[] | null
+    yerlesenler: MesaiTalebiYerlesen[] | null
+    yerlesenSayisi: number
+    eksik: number
+    siparis: { ambarId: string, refNo: string } | null
+    /** KDV haric toplam. */
+    tutar: number
+    faturali: boolean
+    tamamlandi: boolean
+    giren: string
+    createdDate: string
+}
+
+export interface MesaiTalebiKaydetRequest {
+    mesaiTalebiId?: string | null
+    /** "yyyy-MM-dd" */
+    tarih: string
+    mesaiNoktasiId: string
+    companyPoId: string
+    kisiSayisi: number
+    /** "HH:mm" */
+    baslangic: string
+    bitis: string
+    ayrilanPersonelIdleri: string[]
+    aciklama?: string | null
+}
+
+export interface MesaiTalebiKisiDegistirRequest {
+    mesaiTalebiId: string
+    kisiSayisi: number
 }

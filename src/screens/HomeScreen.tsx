@@ -3,18 +3,19 @@ import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { Clock, QrCode, Truck } from 'lucide-react-native';
+import { CalendarClock, Clock, QrCode, Truck } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
 import { theme } from '../theme/theme';
 import { AppStackParamList } from '../navigation/types';
 import { getAmbarVoyageList } from '../api/ambarVoyage';
-import { getMesaiDurum } from '../api/mesai';
+import { getMesaiDurum, getMesaiTalebiListe } from '../api/mesai';
 import { MesaiDurumResponse } from '../types/mesai.types';
 import BottomMenu from '../components/BottomMenu';
 import { Dugme, Yazi } from '../ui';
 import { seferDurumu } from '../utils/sefer';
 import { useKullaniciTuru } from '../utils/kullanici';
 import { saattenBeri, sayacMetni, sunucuZamaniCoz } from '../utils/mesai';
+import { anaSayfaKartlari, gunOzeti, gunOzetiMetni, isoTarih, isTipiBuyuk, isTipiRengi } from '../utils/mesaiPlanlama';
 
 const c = theme.colors;
 
@@ -32,27 +33,35 @@ const Hap = ({ metin, vurgu }: { metin: string, vurgu?: boolean }) => (
 );
 
 /**
- * Ana sayfa (4.3, 09.10.2026; 4.4 QR mesai 11.10.2026): selamlama, Mesai Baslangici ve Gorevlerim.
+ * Ana sayfa (4.3, 09.10.2026; 4.4 QR mesai 11.10.2026; 4.6 Faz 2 18.10.2026).
  *
- * - Mesai karti her odaklanmada Mesai/Durum'dan yenilenir: "Mesai başlamadı" / "Mesaide · nokta · HH:mm'den beri" /
- *   "Sürücü kaydı açık · plaka"; personelde bugunku calisma saati. "QR Okut" kamerayi acar.
- * - Gorevlerim karti (ve sefer ozeti) yalniz surucu kaydi olan kullanicida; yalniz personel olan kullanici gormez.
+ * - Mesai karti her odaklanmada Mesai/Durum'dan yenilenir: kapaliyken "Mesai Başlat"; aciksa "Mesaiyi Bitir",
+ *   yer + is tipi (buyuk harf LOJİSTİK / AMBALAJ) + canli sayac.
+ * - 4.6 kartlar (sozlesme 4.1, R11): Durum.kartlar gorev yetkisinden gelir; Gorevlerim / Mesai Planlama kartlari
+ *   yalniz acik mesai kaydi varken gorunur, mesai kapaninca gizlenir; kapaliyken ipucu "… mesainiz başlayınca açılır".
+ *   Karar utils/mesaiPlanlama.ts anaSayfaKartlari'nda. Sunucu kartlar gondermezse (eski sunucu) 4.5 davranisi:
+ *   Gorevlerim surucu kaydi olan kullanicida her zaman gorunur.
+ * - Gorevlerim seferleri surucu kaydina bagli oldugu icin kart yalniz surucu kaydi olan kullanicida gosterilir.
+ * - Mesai Planlama karti: bugunku talep sayisi + eksik kisi (MesaiTalebi/Liste, sessiz).
  */
 export default function HomeScreen() {
     const user = useAuthStore((s) => s.user);
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-    const { surucu } = useKullaniciTuru();
+    const { surucu, personel } = useKullaniciTuru();
 
     const [ozet, setOzet] = useState<{ toplam: number, baslatilmadi: number, yolda: number } | undefined>(undefined);
     const [mesai, setMesai] = useState<MesaiDurumResponse | undefined>(undefined);
+    const [planOzeti, setPlanOzeti] = useState<{ talep: number, eksik: number } | undefined>(undefined);
     /** Sunucu saati - telefon saati (ms); sayac telefonun saati yanlis olsa da dogru calissin. */
     const [saatFarki, setSaatFarki] = useState(0);
     const [simdi, setSimdi] = useState(() => Date.now());
 
     useFocusEffect(useCallback(() => {
         (async () => {
+            let durum: MesaiDurumResponse | undefined;
+
             try {
-                const durum = await getMesaiDurum();
+                durum = await getMesaiDurum();
                 const sunucu = sunucuZamaniCoz(durum?.sunucuZamani);
 
                 setSaatFarki(sunucu !== null ? sunucu - Date.now() : 0);
@@ -60,6 +69,25 @@ export default function HomeScreen() {
             } catch {
                 // Sessiz istek: kart varsayilan metinle kalir.
                 setMesai(undefined);
+            }
+
+            const karar = anaSayfaKartlari({
+                kartlar: durum?.kartlar,
+                acikKayitVar: !!(durum?.personel?.acikKayit ?? durum?.surucu?.acikKayit),
+                surucu,
+                personel,
+            });
+
+            if (!karar.mesaiPlanlama) {
+                setPlanOzeti(undefined);
+                return;
+            }
+
+            try {
+                const bugun = isoTarih(new Date());
+                setPlanOzeti(gunOzeti(await getMesaiTalebiListe({ baslangic: bugun, bitis: bugun, durum: 'PLAN' }, true)));
+            } catch {
+                setPlanOzeti(undefined);
             }
         })();
 
@@ -82,7 +110,7 @@ export default function HomeScreen() {
                 setOzet(undefined);
             }
         })();
-    }, [surucu, user?.driverId]));
+    }, [surucu, personel, user?.driverId]));
 
     const tarih = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
 
@@ -109,13 +137,19 @@ export default function HomeScreen() {
 
     const gecenSure = girisMs !== null ? sayacMetni(simdi + saatFarki - girisMs) : null;
 
+    const karar = anaSayfaKartlari({ kartlar: mesai?.kartlar, acikKayitVar: !!acikKayit, surucu, personel });
+    const gorevlerimGoster = karar.gorevlerim && surucu;
+
     const durumSatirlari: string[] = [];
 
     if (depoKaydi)
-        durumSatirlari.push(`Mesaide · ${depoKaydi.noktaAdi} · ${saattenBeri(depoKaydi.girisSaati)} beri`);
+        durumSatirlari.push(`${depoKaydi.noktaAdi} · ${saattenBeri(depoKaydi.girisSaati)} beri`);
 
     if (aracKaydi)
         durumSatirlari.push(`Sürücü kaydı açık · ${aracKaydi.noktaAdi} · ${saattenBeri(aracKaydi.girisSaati)} beri`);
+
+    // 4.6: depo kaydinda is tipi QR'dan gelir; buyuk harfle, renkli rozet (Lojistik mavi, Ambalaj turuncu).
+    const isTipiAdi = depoKaydi?.isTipiAdi ?? null;
 
     let altMetin: string;
 
@@ -126,7 +160,7 @@ export default function HomeScreen() {
             ? `Bugünkü çalışma saatiniz ${calisma.baslangic} – ${calisma.bitis}`
             : calisma && !calisma.calisir
                 ? 'Bugün çalışma saatiniz yok; okutulan süre ek mesai sayılır'
-                : 'Depodaki QR kodu okutun';
+                : 'Bulunduğunuz yerdeki QR kodu okutun';
     else
         altMetin = 'Araçtaki QR kodu okutun';
 
@@ -150,12 +184,21 @@ export default function HomeScreen() {
                         <View style={s.ikonKutu}><Clock size={28} color={c.white} /></View>
                         {
                             mesai
-                                ? <Hap metin={depoKaydi || aracKaydi ? 'Mesaide' : 'Mesai başlamadı'} vurgu={!!(depoKaydi || aracKaydi)} />
+                                ? <Hap metin={acikKayit ? 'Mesaide' : 'Mesai başlamadı'} vurgu={!!acikKayit} />
                                 : null
                         }
                     </View>
                     <View style={{ gap: 4 }}>
-                        <Text style={s.kartBaslik}>{depoKaydi || aracKaydi ? 'Mesaidesiniz' : 'Mesai Başlangıcı'}</Text>
+                        <Text style={s.kartBaslik}>{acikKayit ? 'Mesaidesiniz' : 'Mesai Başlangıcı'}</Text>
+                        {
+                            isTipiAdi
+                                ? (
+                                    <View style={[s.isTipi, { backgroundColor: isTipiRengi(isTipiAdi) }]} accessibilityLabel={`İş tipi ${isTipiAdi}`}>
+                                        <Text style={s.isTipiYazi}>{isTipiBuyuk(isTipiAdi)}</Text>
+                                    </View>
+                                )
+                                : null
+                        }
                         {durumSatirlari.map(x => <Text key={x} style={[s.kartAlt, { color: c.white, fontWeight: '600' }]}>{x}</Text>)}
                         {
                             gecenSure
@@ -171,7 +214,7 @@ export default function HomeScreen() {
                     </View>
                     <Dugme
                         // Buton adi duruma gore (12.10.2026, Burak): acik mesai yoksa baslat, varsa bitir; ikisi de QR okutur.
-                        metin={depoKaydi || aracKaydi ? 'Mesaiyi Bitir' : 'Mesai Başlat'}
+                        metin={acikKayit ? 'Mesaiyi Bitir' : 'Mesai Başlat'}
                         tur="cizgili"
                         ikon={<QrCode size={22} color={c.ink} />}
                         onPress={() => navigation.navigate('MesaiQr')}
@@ -179,7 +222,13 @@ export default function HomeScreen() {
                 </View>
 
                 {
-                    surucu
+                    karar.ipucu
+                        ? <Yazi tur="kucuk" style={{ textAlign: 'center' }}>{karar.ipucu}</Yazi>
+                        : null
+                }
+
+                {
+                    gorevlerimGoster
                         ? (
                             <TouchableOpacity activeOpacity={0.88} onPress={() => navigation.navigate('Tasks')} style={[s.buyukKart, { backgroundColor: c.blue }]}>
                                 <View style={s.ikonKutu}><Truck size={28} color={c.white} /></View>
@@ -188,6 +237,20 @@ export default function HomeScreen() {
                                     <Text style={[s.kartAlt, { color: '#DCE7FF' }]}>
                                         {ozet ? `${ozet.toplam} aktif sefer · ${ozet.baslatilmadi} başlatılmadı · ${ozet.yolda} yolda` : 'Seferlerinizi görün'}
                                     </Text>
+                                </View>
+                            </TouchableOpacity>
+                        )
+                        : null
+                }
+
+                {
+                    karar.mesaiPlanlama
+                        ? (
+                            <TouchableOpacity activeOpacity={0.88} onPress={() => navigation.navigate('MesaiPlanlama')} style={[s.buyukKart, { backgroundColor: '#5B21B6' }]}>
+                                <View style={s.ikonKutu}><CalendarClock size={28} color={c.white} /></View>
+                                <View style={{ gap: 4 }}>
+                                    <Text style={s.kartBaslik}>Mesai Planlama</Text>
+                                    <Text style={[s.kartAlt, { color: '#E9E3FF' }]}>{gunOzetiMetni(planOzeti)}</Text>
                                 </View>
                             </TouchableOpacity>
                         )
@@ -212,6 +275,8 @@ const s = StyleSheet.create({
     kartAlt: { fontSize: 14 },
     hap: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
     hapYazi: { fontSize: 13, fontWeight: '700' },
+    isTipi: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10, marginVertical: 4 },
+    isTipiYazi: { fontSize: 20, fontWeight: '800', letterSpacing: 1.2, color: c.white },
     sayacKutu: { alignItems: 'center', marginTop: 10, marginBottom: 6, paddingVertical: 14, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.12)' },
     sayac: { fontSize: 42, fontWeight: '700', color: c.white, letterSpacing: 1, fontVariant: ['tabular-nums'] },
     sayacEtiket: { fontSize: 13, fontWeight: '600', color: '#CDEDEA', marginTop: 2 },
