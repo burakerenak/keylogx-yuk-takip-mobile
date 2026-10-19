@@ -17,8 +17,12 @@ export type AppStackParamList = {
         ambarVoyageId: string
     },
     Profile: undefined,
-    /** 4.4: QR ile mesai giris / cikis (kamera -> is tipi -> sonuc). */
+    /** 4.4: QR ile mesai giris / cikis (kamera -> sonuc; 4.6'da is tipi yalniz eski sunucu sorarsa). */
     MesaiQr: undefined,
+    /** 4.6: Mesai Planlama (Ek Mesai Talepleri): Planlananlar / Tamamlananlar. */
+    MesaiPlanlama: undefined,
+    /** 4.6: Mesai Planlama > Yeni Talep. */
+    MesaiTalebiYeni: undefined,
     /** 4.4: Profilim > Mesai Gecmisim (son 12 ay). */
     MesaiGecmisi: undefined,
     /** 4.4: Mesai Gecmisim > ay detayi (gun gun kayitlar). */

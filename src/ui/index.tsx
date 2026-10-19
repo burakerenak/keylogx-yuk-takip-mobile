@@ -1,6 +1,6 @@
 import React from 'react';
-import { ActivityIndicator, StatusBar, StyleProp, StyleSheet, Text, TextInput, TextInputProps, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
-import { ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
+import { ActivityIndicator, FlatList, Modal, Pressable, StatusBar, StyleProp, StyleSheet, Text, TextInput, TextInputProps, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { Check, ChevronDown, ChevronLeft, Eye, EyeOff, X } from 'lucide-react-native';
 import { theme } from '../theme/theme';
 
 /**
@@ -59,7 +59,7 @@ export const Kart = ({ children, style, onPress }: { children?: React.ReactNode,
 
 // ---------------------------------------------------------------- Durum etiketi
 
-export type EtiketTonu = 'amber' | 'mavi' | 'yesil' | 'gri' | 'turkuaz' | 'kirmizi';
+export type EtiketTonu = 'amber' | 'mavi' | 'yesil' | 'gri' | 'turkuaz' | 'kirmizi' | 'mor';
 
 const etiketRenkleri: Record<EtiketTonu, { bg: string, fg: string }> = {
     amber: { bg: c.amberSoft, fg: c.amberDark },
@@ -68,6 +68,8 @@ const etiketRenkleri: Record<EtiketTonu, { bg: string, fg: string }> = {
     gri: { bg: '#EEF0F4', fg: c.inkSoft },
     turkuaz: { bg: c.tealSoft, fg: c.tealDark },
     kirmizi: { bg: c.redSoft, fg: c.red },
+    /** 4.6: "Yer / iş değişti" ve isimle ayrilan kisi. */
+    mor: { bg: '#EDE9FE', fg: '#5B21B6' },
 };
 
 export const Etiket = ({ metin, ton = 'gri' }: { metin: string, ton?: EtiketTonu }) => (
@@ -154,7 +156,79 @@ export const SifreGirdisi = ({ style, ...props }: Omit<TextInputProps, 'secureTe
 
 export const Ayrac = ({ style }: { style?: StyleProp<ViewStyle> }) => <View style={[{ height: 1, backgroundColor: c.divider }, style]} />;
 
+// ---------------------------------------------------------------- Secim kutusu (alttan acilan liste)
+
+export type SecimSecenegi = { deger: string, ad: string };
+
+/**
+ * 4.6 Secim kutusu (Yeni Talep formu): etiket + secili deger; dokununca alttan liste acilir, secince kapanir.
+ * Liste bossa kutu pasif gorunur (bosMetin). Alttan acilan pencere oldugu icin ust guvenli alana tasmaz.
+ */
+export const SecimKutusu = ({ etiket, secenekler, deger, onSec, yerTutucu = 'Seçiniz', bosMetin, pasif }: {
+    etiket: string
+    secenekler: SecimSecenegi[]
+    deger: string | undefined
+    onSec: (deger: string) => void
+    yerTutucu?: string
+    /** Secenek yokken gosterilen metin (ornek: "Önce müşteri seçin"). */
+    bosMetin?: string
+    pasif?: boolean
+}) => {
+    const [acik, setAcik] = React.useState(false);
+    const secili = secenekler.find(x => x.deger === deger);
+    const kapali = pasif || secenekler.length === 0;
+
+    return (
+        <View style={{ gap: 6 }}>
+            <Yazi tur="kucukKalin">{etiket}</Yazi>
+            <TouchableOpacity
+                activeOpacity={0.85}
+                disabled={kapali}
+                onPress={() => setAcik(true)}
+                style={[s.secim, kapali ? { backgroundColor: c.bg } : null]}
+                accessibilityRole="button"
+                accessibilityLabel={`${etiket}: ${secili?.ad ?? yerTutucu}`}
+            >
+                <Yazi tur="govde" satir={1} style={{ flex: 1, color: secili ? c.ink : c.placeholder }}>
+                    {secili?.ad ?? (secenekler.length === 0 && bosMetin ? bosMetin : yerTutucu)}
+                </Yazi>
+                <ChevronDown size={20} color={c.placeholder} />
+            </TouchableOpacity>
+
+            <Modal visible={acik} transparent animationType="slide" onRequestClose={() => setAcik(false)}>
+                <Pressable style={s.perde} onPress={() => setAcik(false)} accessibilityLabel="Kapat" />
+                <View style={s.sayfaAlt}>
+                    <View style={s.sayfaBaslik}>
+                        <Yazi tur="altBaslik" satir={1} style={{ flex: 1 }}>{etiket}</Yazi>
+                        <TouchableOpacity onPress={() => setAcik(false)} hitSlop={8} accessibilityLabel="Kapat"><X size={24} color={c.ink} /></TouchableOpacity>
+                    </View>
+                    <FlatList
+                        data={secenekler}
+                        keyExtractor={x => x.deger}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                style={s.secenek}
+                                onPress={() => { onSec(item.deger); setAcik(false); }}
+                                accessibilityState={{ selected: item.deger === deger }}
+                            >
+                                <Yazi tur={item.deger === deger ? 'govdeKalin' : 'govde'} style={{ flex: 1, color: item.deger === deger ? c.blue : c.ink }}>{item.ad}</Yazi>
+                                {item.deger === deger ? <Check size={20} color={c.blue} /> : null}
+                            </TouchableOpacity>
+                        )}
+                        ItemSeparatorComponent={Ayrac}
+                    />
+                </View>
+            </Modal>
+        </View>
+    );
+};
+
 const s = StyleSheet.create({
+    secim: { minHeight: 50, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: c.border, borderRadius: 12, paddingHorizontal: 14, backgroundColor: c.white },
+    perde: { flex: 1, backgroundColor: 'rgba(16,24,38,0.45)' },
+    sayfaAlt: { maxHeight: '70%', backgroundColor: c.white, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingBottom: 28 },
+    sayfaBaslik: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: c.border },
+    secenek: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingVertical: 15 },
     baslik: { flexDirection: 'row', alignItems: 'center', backgroundColor: c.white, paddingHorizontal: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.border, minHeight: 60 },
     geri: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
     kart: { backgroundColor: c.white, borderRadius: theme.radius.xl, borderWidth: 1, borderColor: c.border, padding: 16 },

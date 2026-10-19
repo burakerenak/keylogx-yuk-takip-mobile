@@ -290,7 +290,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = EbbeDevDriverMobile/EbbeDevDriverMobile.entitlements;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = QX4997CT8K;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = EbbeDevDriverMobile/Info.plist;
@@ -301,7 +301,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.5;
+				MARKETING_VERSION = 4.6;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -324,7 +324,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = EbbeDevDriverMobile/EbbeDevDriverMobile.entitlements;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = QX4997CT8K;
 				INFOPLIST_FILE = EbbeDevDriverMobile/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Keylogx Yük Takip";
@@ -334,7 +334,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.5;
+				MARKETING_VERSION = 4.6;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
