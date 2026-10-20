@@ -82,12 +82,19 @@ android {
     // TEST derlemesi (gradlew assembleRelease -PkeylogxTest): canli uygulamanin yanina ayri kurulur.
     // Paket kimligi ".test" ekli, adi "Keylogx TEST". API adresi src/config.ts AKTIF_ORTAM ile secilir.
     def keylogxTest = project.hasProperty("keylogxTest")
+    // Google Maps Android anahtari kodda tutulmaz: gradle ozelligi KEYLOGX_HARITA_ANAHTARI
+    // (GRADLE_USER_HOME/gradle.properties, or. D:\gradle-home\gradle.properties). Anahtar sirket Google
+    // projesinde, paket adi + imza SHA-1 ile kisitli. Release derlemesi anahtarsiz baslamaz (harita bos kalirdi).
+    def haritaAnahtari = (project.findProperty("KEYLOGX_HARITA_ANAHTARI") ?: "").toString().trim()
+    if (haritaAnahtari.isEmpty() && gradle.startParameter.taskNames.any { it.toLowerCase().contains("release") }) {
+        throw new GradleException("KEYLOGX_HARITA_ANAHTARI tanimli degil: GRADLE_USER_HOME/gradle.properties dosyasina ekleyin.")
+    }
     defaultConfig {
         applicationId "com.ebbedev.cargotrackingmobile"
         if (keylogxTest) {
             applicationIdSuffix ".test"
         }
-        manifestPlaceholders = [appLabel: keylogxTest ? "Keylogx TEST" : "@string/app_name"]
+        manifestPlaceholders = [appLabel: keylogxTest ? "Keylogx TEST" : "@string/app_name", haritaAnahtari: haritaAnahtari]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 12
