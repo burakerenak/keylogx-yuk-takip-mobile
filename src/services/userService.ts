@@ -21,8 +21,13 @@ export const getUser = async (): Promise<LoginResponse | null> => {
     return JSON.parse(credentials.password) as LoginResponse;
 };
 
+/**
+ * Hatirlanan kullaniciyi siler (Cikis Yap, "Beni hatirla" kapali giris, sifre degisimi).
+ * Kayit setInternetCredentials(server = USER_KEY) ile yapildigi icin silme de server ile olmali; eskiden
+ * { service } veriliyordu, kayit silinmiyor ve uygulama yeniden acilinca cikis yapilan kullaniciyla giriyordu (21.10.2026).
+ */
 export const deleteUser = async (): Promise<void> => {
     await Keychain.resetInternetCredentials({
-        service: USER_KEY,
+        server: USER_KEY,
     });
 };
