@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { theme } from "../theme/theme";
 import { AppStackParamList } from "../navigation/types";
 import { useKullaniciTuru } from "../utils/kullanici";
+import { useMesaiKartStore } from "../store/mesaiKartStore";
 
 interface Props {
     /** 0: Ana Sayfa, 1: Gorevlerim, 2: Profilim */
@@ -18,17 +19,23 @@ const sekmeler: { ad: string, ekran: 'Home' | 'Tasks' | 'Profile', Ikon: typeof 
     { ad: 'Profilim', ekran: 'Profile', Ikon: User },
 ];
 
-/** Alt menu (4.3, 09.10.2026): Ana Sayfa / Gorevlerim / Profilim. 4.4: surucu kaydi olmayan (yalniz personel) kullanicida Gorevlerim gizlenir. */
+/**
+ * Alt menu (4.3, 09.10.2026): Ana Sayfa / Gorevlerim / Profilim. 4.4: surucu kaydi olmayan (yalniz personel) kullanicida Gorevlerim gizlenir.
+ * 21.10.2026: Gorevlerim sekmesi ana sayfadaki Gorevlerim kartiyla ayni kurala uyar (Arac yetkisi + surucu kaydi + mesai acik;
+ * personeli olmayan yalniz surucu kullanicida her zaman). Karar ana sayfadan gelir; henuz yoksa eski kural (surucu kaydi).
+ */
 const BottomMenu = ({ activeIndex }: Props) => {
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
     const { surucu } = useKullaniciTuru();
+    const gorevlerimKarari = useMesaiKartStore((s) => s.gorevlerim);
+    const gorevlerimSekmesi = surucu && (gorevlerimKarari ?? true);
 
     return (
         <SafeAreaView edges={['bottom']} style={s.kap}>
             <View style={s.satir}>
                 {
                     sekmeler.map((x, i) => {
-                        if (x.ekran === 'Tasks' && !surucu)
+                        if (x.ekran === 'Tasks' && !gorevlerimSekmesi)
                             return null;
 
                         const aktif = i === activeIndex;

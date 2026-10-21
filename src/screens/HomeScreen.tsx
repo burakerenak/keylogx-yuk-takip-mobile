@@ -1,10 +1,11 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { CalendarClock, Clock, QrCode, Truck } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
+import { useMesaiKartStore } from '../store/mesaiKartStore';
 import { theme } from '../theme/theme';
 import { AppStackParamList } from '../navigation/types';
 import { getAmbarVoyageList } from '../api/ambarVoyage';
@@ -139,6 +140,13 @@ export default function HomeScreen() {
 
     const karar = anaSayfaKartlari({ kartlar: mesai?.kartlar, acikKayitVar: !!acikKayit, surucu, personel });
     const gorevlerimGoster = karar.gorevlerim && surucu;
+
+    // Alt menudeki Gorevlerim sekmesi de ayni karara uyar (21.10.2026); durum okunmadan once eski davranis kalir.
+    const setGorevlerimSekmesi = useMesaiKartStore((s) => s.setGorevlerim);
+    useEffect(() => {
+        if (mesai !== undefined)
+            setGorevlerimSekmesi(gorevlerimGoster);
+    }, [mesai, gorevlerimGoster, setGorevlerimSekmesi]);
 
     const durumSatirlari: string[] = [];
 
