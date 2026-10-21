@@ -3,7 +3,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleShe
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import { Minus, Plus } from 'lucide-react-native';
+import { Minus, Plus, X } from 'lucide-react-native';
 import { theme } from '../theme/theme';
 import { AppStackParamList } from '../navigation/types';
 import { getMesaiTalebiSecenekler, kaydetMesaiTalebi } from '../api/mesai';
@@ -16,8 +16,6 @@ const c = theme.colors;
 /** Kisi sayisi ust siniri (yanlislikla buyuk sayi girilmesin). */
 const EN_FAZLA_KISI = 99;
 
-/** Isim secimi bos deger: kimse ayrilmaz, talep gelenlerle sirayla dolar. */
-const SIRAYLA = '';
 
 /**
  * 4.6 Mesai Planlama > Yeni Talep (18.10.2026; sozlesme 4.4).
@@ -25,7 +23,8 @@ const SIRAYLA = '';
  * - Secenekler MesaiTalebi/Secenekler'den: depolar, PO satirlari, saat araliklari, personeller.
  * - Tarih: bugun ve sonraki 30 gun. Musteri -> Bolum -> PO · PO No kademeli (poSatirlari'ndan turetilir);
  *   ust secim degisince alttaki secim sifirlanir, tek secenek kalirsa kendiliginden secilir.
- * - Kisi sayisi en az 1. Isim istege bagli (secilirse ayrilanPersonelIdleri tek kisi).
+ * - Kisi sayisi en az 1. Ayrilan kisiler istege bagli, en cok kisi sayisi kadar (#468, 21.10.2026; eskiden tek isim):
+ *   secilenler kaldirilabilir rozet; kisi sayisi secilenlerin altina inerse uyari + kayit kapali (sunucu da reddeder).
  * - Talebi Kaydet -> MesaiTalebi/Kaydet; basarida Mesai Planlama'ya donulur (liste odaklanmada yenilenir).
  */
 export default function MesaiTalebiYeniScreen() {
@@ -47,7 +46,10 @@ export default function MesaiTalebiYeniScreen() {
     const [kisiMetni, setKisiMetni] = useState('1');
     const kisi = Math.min(EN_FAZLA_KISI, parseInt(kisiMetni, 10) || 0);
     const setKisi = (n: number) => setKisiMetni(`${Math.min(EN_FAZLA_KISI, Math.max(1, n))}`);
-    const [isim, setIsim] = useState<string>(SIRAYLA);
+    /** Isimle ayrilan personeller (bos: yerler cikis sirasina gore dolar). */
+    const [isimler, setIsimler] = useState<string[]>([]);
+    const isimEkle = (id: string) => setIsimler(o => (o.includes(id) ? o : [...o, id]));
+    const isimCikar = (id: string) => setIsimler(o => o.filter(x => x !== id));
 
     const yukle = async () => {
         setYukleniyor(true);
@@ -104,9 +106,11 @@ export default function MesaiTalebiYeniScreen() {
         !saat ? 'mesai saat aralığı' : null,
         kisi < 1 ? 'kişi sayısı' : null,
     ].filter(Boolean) as string[];
+    /** Ayrilan kisi sayisi kisi sayisini gecemez. */
+    const fazlaIsim = isimler.length > kisi;
 
     const kaydet = async () => {
-        if (eksikler.length || !depo || !po || !saat || kisi < 1)
+        if (eksikler.length || fazlaIsim || !depo || !po || !saat || kisi < 1)
             return;
 
         setKaydediliyor(true);
@@ -119,7 +123,7 @@ export default function MesaiTalebiYeniScreen() {
                 kisiSayisi: kisi,
                 baslangic: saat.baslangic,
                 bitis: saat.bitis,
-                ayrilanPersonelIdleri: isim ? [isim] : [],
+                ayrilanPersonelIdleri: isimler,
             });
 
             navigation.goBack();
@@ -131,6 +135,7 @@ export default function MesaiTalebiYeniScreen() {
     };
 
     const kisiYaz = (metin: string) => setKisiMetni(metin.replace(/\D/g, ''));
+    const personelAdi = (id: string) => secenekler?.personeller?.find(x => x.personnelId === id)?.ad ?? 'Personel';
 
     // ------------------------------------------------------------ Ekran
 
@@ -193,21 +198,43 @@ export default function MesaiTalebiYeniScreen() {
                                             </View>
                                         </View>
 
-                                        <SecimKutusu
-                                            etiket="İsim (isteğe bağlı)"
-                                            secenekler={[{ deger: SIRAYLA, ad: 'Sırayla doldurulsun' }, ...(secenekler.personeller ?? []).map(x => ({ deger: x.personnelId, ad: x.ad }))]}
-                                            deger={isim}
-                                            onSec={setIsim}
-                                        />
+                                        <View style={{ gap: 8 }}>
+                                            {
+                                                isimler.length
+                                                    ? (
+                                                        <View style={s.rozetler}>
+                                                            {isimler.map(id => (
+                                                                <TouchableOpacity key={id} style={s.rozet} onPress={() => isimCikar(id)} accessibilityRole="button" accessibilityLabel={`${personelAdi(id)} kaldır`}>
+                                                                    <Text style={s.rozetYazi} numberOfLines={1}>{personelAdi(id)}</Text>
+                                                                    <X size={16} color="#5B21B6" />
+                                                                </TouchableOpacity>
+                                                            ))}
+                                                        </View>
+                                                    )
+                                                    : null
+                                            }
+                                            <SecimKutusu
+                                                etiket={`Ayrılan kişiler (isteğe bağlı) · ${isimler.length}/${Math.max(kisi, 1)}`}
+                                                secenekler={(secenekler.personeller ?? []).filter(x => !isimler.includes(x.personnelId)).map(x => ({ deger: x.personnelId, ad: x.ad }))}
+                                                deger={undefined}
+                                                onSec={isimEkle}
+                                                yerTutucu={isimler.length >= kisi ? 'Kişi sayısı kadar seçildi' : 'Kişi ekle'}
+                                                bosMetin="Eklenecek personel yok"
+                                                pasif={isimler.length >= kisi}
+                                            />
+                                            <Yazi tur="kucuk" style={{ color: c.muted }}>Seçilen kişilere yer ayrılır; boş kalan yerler mesaiden çıkış sırasına göre dolar.</Yazi>
+                                        </View>
                                     </Kart>
 
                                     {
-                                        eksikler.length
+                                        fazlaIsim
+                                            ? <Yazi tur="kucuk" style={{ textAlign: 'center', color: c.red }}>Ayrılan kişi sayısı ({isimler.length}) kişi sayısından ({kisi}) fazla olamaz; kişi sayısını artırın ya da isim kaldırın.</Yazi>
+                                            : eksikler.length
                                             ? <Yazi tur="kucuk" style={{ textAlign: 'center' }}>Kaydetmek için seçin: {eksikler.join(', ')}.</Yazi>
                                             : <Text style={s.not}>Talep, aynı gün bu depoda saat aralığıyla kesişen Lojistik mesailerle sırayla dolar; sipariş ilk kişiyle açılır.</Text>
                                     }
 
-                                    <Dugme metin="Talebi Kaydet" onPress={kaydet} pasif={eksikler.length > 0} yukleniyor={kaydediliyor} />
+                                    <Dugme metin="Talebi Kaydet" onPress={kaydet} pasif={eksikler.length > 0 || fazlaIsim} yukleniyor={kaydediliyor} />
                                 </ScrollView>
                             </KeyboardAvoidingView>
                         )
@@ -227,4 +254,7 @@ const s = StyleSheet.create({
     miniPasif: { opacity: 0.4 },
     kisiKutu: { flex: 1, height: 48, borderWidth: 1, borderColor: c.border, borderRadius: 12, textAlign: 'center', fontSize: 18, fontWeight: '700', color: c.ink, backgroundColor: c.white },
     not: { fontSize: 13, color: c.muted, textAlign: 'center' },
+    rozetler: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    rozet: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, backgroundColor: '#EDE9FE', borderWidth: 1, borderColor: '#7C3AED', maxWidth: '100%' },
+    rozetYazi: { fontSize: 14, fontWeight: '600', color: '#5B21B6', flexShrink: 1 },
 });
