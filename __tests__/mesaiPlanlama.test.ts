@@ -34,8 +34,11 @@ describe('anaSayfaKartlari', () => {
     });
 
     test('mesai kapali: kart yok, ipucu yetkili kartlarla', () => {
+        // 22.10.2026: Mesai Planlama mesai kapaliyken de gorunur; ipucu yalniz Gorevlerim'i sayar.
         expect(anaSayfaKartlari({ kartlar: ['MesaiPlanlama', 'Gorevlerim'], acikKayitVar: false, surucu: true, personel: true }))
-            .toEqual({ gorevlerim: false, mesaiPlanlama: false, ipucu: 'Görevlerim ve Mesai Planlama mesainiz başlayınca açılır.' });
+            .toEqual({ gorevlerim: false, mesaiPlanlama: true, ipucu: 'Görevlerim mesainiz başlayınca açılır.' });
+        expect(anaSayfaKartlari({ kartlar: ['MesaiPlanlama'], acikKayitVar: false, surucu: false, personel: true }))
+            .toEqual({ gorevlerim: false, mesaiPlanlama: true, ipucu: null });
     });
 
     test('mesai kapali, karti olmayan depo personeli: ipucu yok', () => {
