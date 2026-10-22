@@ -134,7 +134,8 @@ export default function MesaiQrScreen() {
 
             const { surucu, personel } = kullaniciTuru();
             const karar = anaSayfaKartlari({ kartlar: durum.kartlar, acikKayitVar: true, surucu, personel });
-            const adlar = [karar.gorevlerim && surucu ? KART_ADLARI.Gorevlerim : null, karar.mesaiPlanlama ? KART_ADLARI.MesaiPlanlama : null]
+            // Mesai Planlama mesaiden bagimsiz her zaman acik (22.10.2026); "açıldı" satirinda yalniz Gorevlerim.
+            const adlar = [karar.gorevlerim && surucu ? KART_ADLARI.Gorevlerim : null]
                 .filter(Boolean) as string[];
 
             setMod(onceki => (onceki.tur === 'sonuc' && onceki.yanit === _yanit ? { ...onceki, acilanKartlar: adlar } : onceki));

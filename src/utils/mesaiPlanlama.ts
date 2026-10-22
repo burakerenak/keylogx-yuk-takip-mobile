@@ -36,7 +36,8 @@ export const yetkiliKartlar = (kartlar: string[] | null | undefined): string[] =
  *
  * - kartlar alani hic gelmezse (undefined / null: Faz 2 oncesi sunucu) 4.5 davranisi: Gorevlerim surucu kaydi olan
  *   kullanicida her zaman gorunur, Mesai Planlama gorunmez, ipucu yok.
- * - kartlar geldiyse kartlar yalniz acik mesai kaydi varken gorunur; kapaliyken ipucu gosterilir.
+ * - kartlar geldiyse Gorevlerim yalniz acik mesai kaydi varken gorunur; kapaliyken ipucu gosterilir.
+ * - Mesai Planlama mesai acik olmasa da gorunur (22.10.2026, Burak): planlamaci evden / mesai disinda talep girebilir.
  * - Personele bagli olmayan, yalniz surucu kullanici (gorevi yok, kartlar bos gelir) eskisi gibi arac QR'i okutur;
  *   seferlerine ulasamaz hale gelmesin diye Gorevlerim ona her durumda yetkili sayilir (yine yalniz mesai acikken).
  */
@@ -54,14 +55,19 @@ export const anaSayfaKartlari = (p: {
     if (p.surucu && !p.personel && !yetkili.includes('Gorevlerim'))
         yetkili.unshift('Gorevlerim');
 
-    if (!p.acikKayitVar)
+    const planlama = yetkili.includes('MesaiPlanlama');
+
+    if (!p.acikKayitVar) {
+        // Mesai Planlama mesaiye bagli degil; ipucu yalniz mesaiyle acilan kartlari sayar.
+        const bekleyen = yetkili.filter(k => k !== 'MesaiPlanlama');
         return {
             gorevlerim: false,
-            mesaiPlanlama: false,
-            ipucu: yetkili.length ? `${adlariBirlestir(yetkili.map(k => KART_ADLARI[k]))} mesainiz başlayınca açılır.` : null,
+            mesaiPlanlama: planlama,
+            ipucu: bekleyen.length ? `${adlariBirlestir(bekleyen.map(k => KART_ADLARI[k]))} mesainiz başlayınca açılır.` : null,
         };
+    }
 
-    return { gorevlerim: yetkili.includes('Gorevlerim'), mesaiPlanlama: yetkili.includes('MesaiPlanlama'), ipucu: null };
+    return { gorevlerim: yetkili.includes('Gorevlerim'), mesaiPlanlama: planlama, ipucu: null };
 };
 
 // ---------------------------------------------------------------- Para

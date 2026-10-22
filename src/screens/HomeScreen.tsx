@@ -40,6 +40,7 @@ const Hap = ({ metin, vurgu }: { metin: string, vurgu?: boolean }) => (
  *   yer + is tipi (buyuk harf LOJİSTİK / AMBALAJ) + canli sayac.
  * - 4.6 kartlar (sozlesme 4.1, R11): Durum.kartlar gorev yetkisinden gelir; Gorevlerim / Mesai Planlama kartlari
  *   yalniz acik mesai kaydi varken gorunur, mesai kapaninca gizlenir; kapaliyken ipucu "… mesainiz başlayınca açılır".
+ *   22.10.2026: Mesai Planlama karti mesaiye bagli degil, yetkili kullanicida her zaman gorunur (evden talep girilebilir).
  *   Karar utils/mesaiPlanlama.ts anaSayfaKartlari'nda. Sunucu kartlar gondermezse (eski sunucu) 4.5 davranisi:
  *   Gorevlerim surucu kaydi olan kullanicida her zaman gorunur.
  * - Gorevlerim seferleri surucu kaydina bagli oldugu icin kart yalniz surucu kaydi olan kullanicida gosterilir.
