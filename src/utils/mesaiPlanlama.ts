@@ -3,7 +3,7 @@
  * Yeni Talep kademeli secim listeleri, talep doluluk / eksik hesabi, tarih secenekleri.
  * React / ag bagimliligi yoktur; __tests__/mesaiPlanlama.test.ts ile sinanir.
  */
-import { MesaiPoSatiri, MesaiTalebiItem } from '../types/mesai.types';
+import { MesaiPoSatiri, MesaiTalebiDepo, MesaiTalebiItem } from '../types/mesai.types';
 
 // ---------------------------------------------------------------- Ana sayfa kartlari
 
@@ -153,6 +153,27 @@ export const poListesi = (satirlar: MesaiPoSatiri[], customerId: string | undefi
     return (satirlar ?? [])
         .filter(x => x.customerId === customerId && bolumAnahtari(x) === bolum)
         .map(x => ({ deger: x.companyPoId, ad: poAdi(x) }));
+};
+
+/**
+ * Depo eslesmesi (#508; sunucudaki MesaiDepoEslesme ile ayni): depoya musteri secilmisse yalniz o musterilerin PO satirlari;
+ * musteriye bolum secilmisse yalniz o bolumler, secilmemisse butun bolumleri. Eslesme yoksa butun satirlar.
+ */
+export const depoSatirlari = (satirlar: MesaiPoSatiri[], depo: MesaiTalebiDepo | undefined): MesaiPoSatiri[] => {
+    const eslesme = depo?.musteriler ?? [];
+    if (eslesme.length === 0) return satirlar ?? [];
+
+    return (satirlar ?? []).filter(x => {
+        const m = eslesme.find(e => e.musteriId === x.customerId);
+        return m !== undefined && (m.bolumIdleri.length === 0 || (!!x.divisionId && m.bolumIdleri.includes(x.divisionId)));
+    });
+};
+
+/** Yeni talepte varsayilan depo: sunucunun verdigi (tek depoda yetkili), yoksa listede tek depo varsa o. */
+export const varsayilanDepo = (depolar: MesaiTalebiDepo[], sunucuVarsayilani: string | null | undefined, onceki?: string): string | undefined => {
+    if (onceki !== undefined && depolar.some(x => x.mesaiNoktasiId === onceki)) return onceki;
+    if (sunucuVarsayilani && depolar.some(x => x.mesaiNoktasiId === sunucuVarsayilani)) return sunucuVarsayilani;
+    return depolar.length === 1 ? depolar[0].mesaiNoktasiId : undefined;
 };
 
 /** Listede tek secenek varsa onu, yoksa (ya da onceki secim listede kalmadiysa) undefined doner: kademede otomatik secim. */
