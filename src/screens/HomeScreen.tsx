@@ -9,8 +9,10 @@ import { useMesaiKartStore } from '../store/mesaiKartStore';
 import { theme } from '../theme/theme';
 import { AppStackParamList } from '../navigation/types';
 import { getAmbarVoyageList } from '../api/ambarVoyage';
-import { getMesaiDurum, getMesaiTalebiListe } from '../api/mesai';
-import { MesaiDurumResponse } from '../types/mesai.types';
+import { getDavetlerim, getMesaiDurum, getMesaiTalebiListe } from '../api/mesai';
+import { MesaiDavetItem, MesaiDurumResponse } from '../types/mesai.types';
+import { bekleyeniAc } from '../services/bildirimYonlendirme';
+import { DAVET_BEKLIYOR } from '../utils/mesaiDavet';
 import BottomMenu from '../components/BottomMenu';
 import { Dugme, Yazi } from '../ui';
 import { seferDurumu } from '../utils/sefer';
@@ -57,6 +59,18 @@ export default function HomeScreen() {
     /** Sunucu saati - telefon saati (ms); sayac telefonun saati yanlis olsa da dogru calissin. */
     const [saatFarki, setSaatFarki] = useState(0);
     const [simdi, setSimdi] = useState(() => Date.now());
+
+    // Ek mesai daveti (#515): bildirim kacirilirsa kart; uygulama bildirimle acildiysa bekleyen ekrana gidilir.
+    const [davetler, setDavetler] = useState<MesaiDavetItem[]>([]);
+    const bekleyenDavetler = davetler.filter(x => x.davetDurumu === DAVET_BEKLIYOR);
+
+    useFocusEffect(useCallback(() => {
+        const zaman = setTimeout(bekleyeniAc, 150);
+
+        getDavetlerim(true).then(setDavetler).catch(() => setDavetler([]));
+
+        return () => clearTimeout(zaman);
+    }, []));
 
     useFocusEffect(useCallback(() => {
         (async () => {
@@ -188,6 +202,24 @@ export default function HomeScreen() {
                 </View>
                 <Yazi tur="kucuk" style={{ marginBottom: 18 }}>{tarih}</Yazi>
 
+                {
+                    bekleyenDavetler.length
+                        ? (
+                            <TouchableOpacity
+                                activeOpacity={0.88}
+                                onPress={() => navigation.navigate('EkMesaiDavet', bekleyenDavetler.length === 1 ? { mesaiTalebiId: bekleyenDavetler[0].mesaiTalebiId } : undefined)}
+                                style={s.davetKart}
+                                accessibilityRole="button"
+                            >
+                                <CalendarClock size={24} color={c.white} />
+                                <View style={{ flex: 1, gap: 2 }}>
+                                    <Text style={s.davetBaslik}>{bekleyenDavetler.length === 1 ? 'Ek mesai davetiniz var' : `${bekleyenDavetler.length} ek mesai davetiniz var`}</Text>
+                                    <Text style={s.davetAlt}>{bekleyenDavetler[0].tarihStr} {bekleyenDavetler[0].aralik} · {bekleyenDavetler[0].depoAdi}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        )
+                        : null
+                }
                 <View style={[s.buyukKart, { backgroundColor: c.teal }]}>
                     <View style={s.kartUst}>
                         <View style={s.ikonKutu}><Clock size={28} color={c.white} /></View>
@@ -289,4 +321,7 @@ const s = StyleSheet.create({
     sayacKutu: { alignItems: 'center', marginTop: 10, marginBottom: 6, paddingVertical: 14, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.12)' },
     sayac: { fontSize: 42, fontWeight: '700', color: c.white, letterSpacing: 1, fontVariant: ['tabular-nums'] },
     sayacEtiket: { fontSize: 13, fontWeight: '600', color: '#CDEDEA', marginTop: 2 },
+    davetKart: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, padding: 16, backgroundColor: '#C2410C' },
+    davetBaslik: { fontSize: 16, fontWeight: '700', color: c.white },
+    davetAlt: { fontSize: 13, color: '#FFEDD5' },
 });

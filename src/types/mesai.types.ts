@@ -187,6 +187,42 @@ export interface MesaiTalebiAyrilan {
     personnelId: string
     ad: string
     geldi: boolean
+    /** Ek mesai daveti: 1 Bekliyor, 2 Kaliyor, 3 Kalamiyor; bos ise davetsiz eski satir. */
+    davetDurumu?: number | null
+    davetZamani?: string | null
+    yanitZamani?: string | null
+    /** "12 dk", "1 sa 5 dk" */
+    yanitSuresi?: string | null
+    redNotu?: string | null
+    telefonVar?: boolean
+}
+
+/** Personelin davet ekrani (MesaiTalebi/Davetlerim). */
+export interface MesaiDavetItem {
+    mesaiTalebiId: string
+    tarihStr: string
+    aralik: string
+    depoAdi: string | null
+    aciklama: string | null
+    davetDurumu: number
+    davetZamani: string | null
+    yanitZamani: string | null
+    redNotu: string | null
+    /** Kalamiyorum'a gecilebilir mi. */
+    degistirilebilir: boolean
+}
+
+export interface MesaiDavetYanitRequest {
+    mesaiTalebiId: string
+    kaliyor: boolean
+    not?: string
+}
+
+export interface MesaiTalebiDavetGuncelleRequest {
+    mesaiTalebiId: string
+    kisiSayisi: number
+    eklenecekPersonelIdleri: string[]
+    cikarilacakPersonelIdleri: string[]
 }
 
 export interface MesaiTalebiYerlesen {
@@ -218,6 +254,10 @@ export interface MesaiTalebiItem {
     /** "18:00–22:00" */
     aralik: string
     ayrilanlar: MesaiTalebiAyrilan[] | null
+    /** Daveti reddedenler: yer tutmaz, yeniden secilemez. */
+    reddedenler?: MesaiTalebiAyrilan[] | null
+    /** Talepte davet gitmis kisi var: kisi artirmak icin personel secilir. */
+    davetModu?: boolean
     yerlesenler: MesaiTalebiYerlesen[] | null
     yerlesenSayisi: number
     eksik: number

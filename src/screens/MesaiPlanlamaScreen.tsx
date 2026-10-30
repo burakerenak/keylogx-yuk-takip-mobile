@@ -10,6 +10,7 @@ import { useAuthStore } from '../store/authStore';
 import { getMesaiTalebiListe, kisiDegistirMesaiTalebi, silMesaiTalebi } from '../api/mesai';
 import { MesaiTalebiItem } from '../types/mesai.types';
 import { Dugme, EkranBaslik, Etiket, Kart, Yazi } from '../ui';
+import { davetDurumMetni, davetDurumTonu } from '../utils/mesaiDavet';
 import { dolulukKutulari, eksikSayisi, gunEkle, paraMetni, trTarih, yerlesenSayisi } from '../utils/mesaiPlanlama';
 
 const c = theme.colors;
@@ -38,6 +39,7 @@ const birlestir = (...parcalar: (string | null | undefined)[]) => parcalar.filte
  * - Planlananlar (MesaiTalebi/Liste durum=PLAN, bugun ve sonrasi): kisi -/+ (KisiDegistir, en az 1), Sil (onay), "+ Yeni Talep".
  * - Tamamlananlar (durum=TAMAM, gunu gecmis, son 90 gun): salt okunur; yerlesen kisi, siparis no + tutar.
  * - Faturali talep degistirilemez / silinemez: -/+ ve Sil gizlenir.
+ * - Davetli talepte (#515) kisi durumlari gorunur; "Davetleri Yönet" ve kisi artirma yerine kisi secme ekranina gider.
  * - Her odaklanmada iki liste de yenilenir (Yeni Talep'ten donunce yeni kayit gorunur).
  */
 export default function MesaiPlanlamaScreen() {
@@ -79,6 +81,12 @@ export default function MesaiPlanlamaScreen() {
 
         if (yeni < 1 || islemde)
             return;
+
+        // Davetli talepte kisi artirmak icin yeni kisi secilir.
+        if (fark > 0 && t.davetModu) {
+            navigation.navigate('EkMesaiDavetYonetim', { mesaiTalebiId: t.mesaiTalebiId });
+            return;
+        }
 
         setIslemde(t.mesaiTalebiId);
 
@@ -148,6 +156,7 @@ export default function MesaiPlanlamaScreen() {
                             islemde={islemde === t.mesaiTalebiId}
                             onKisi={fark => kisiDegistir(t, fark)}
                             onSil={() => sil(t)}
+                            onDavet={() => navigation.navigate('EkMesaiDavetYonetim', { mesaiTalebiId: t.mesaiTalebiId })}
                         />
                     ))
                 }
@@ -177,18 +186,22 @@ export default function MesaiPlanlamaScreen() {
 }
 
 /** Talep karti: tarih · depo + rozet, aralik, musteri · bolum, PO · PO No, doluluk, yerlesenler, ayrilanlar, siparis. */
-const TalepKarti = ({ t, tamam, islemde, onKisi, onSil }: {
+const TalepKarti = ({ t, tamam, islemde, onKisi, onSil, onDavet }: {
     t: MesaiTalebiItem
     tamam: boolean
     islemde: boolean
     onKisi: (fark: number) => void
     onSil: () => void
+    onDavet: () => void
 }) => {
     const eksik = eksikSayisi(t);
     const yerlesen = yerlesenSayisi(t);
     const kutular = dolulukKutulari(t);
     const ayrilanlar = (t.ayrilanlar ?? []).filter(x => !x.geldi);
     const degistirilebilir = !tamam && !t.faturali;
+    const reddedenler = t.reddedenler ?? [];
+    const davetSatirlari = [...(t.ayrilanlar ?? []), ...reddedenler].filter(x => x.davetDurumu != null);
+    const bosYer = t.davetModu ? t.kisiSayisi - (t.ayrilanlar ?? []).length : 0;
 
     const rozet = tamam
         ? <Etiket metin={`${yerlesen}/${t.kisiSayisi} kişi`} ton={eksik > 0 ? 'kirmizi' : 'yesil'} />
@@ -242,7 +255,32 @@ const TalepKarti = ({ t, tamam, islemde, onKisi, onSil }: {
                     : null
             }
 
-            {ayrilanlar.length ? <Yazi tur="kucuk" style={{ color: '#5B21B6' }}>Ayrılan: {ayrilanlar.map(x => x.ad).join(', ')}</Yazi> : null}
+            {!t.davetModu && ayrilanlar.length ? <Yazi tur="kucuk" style={{ color: '#5B21B6' }}>Ayrılan: {ayrilanlar.map(x => x.ad).join(', ')}</Yazi> : null}
+
+            {
+                davetSatirlari.length
+                    ? (
+                        <View style={{ gap: 4 }}>
+                            {
+                                davetSatirlari.map(x => (
+                                    <View key={x.personnelId} style={s.satir}>
+                                        <Yazi tur="kucuk" satir={1} style={{ flex: 1 }}>{x.ad}{x.yanitSuresi ? ` · ${x.yanitSuresi}` : ''}</Yazi>
+                                        <Etiket metin={davetDurumMetni(x.davetDurumu)} ton={davetDurumTonu(x.davetDurumu)} />
+                                    </View>
+                                ))
+                            }
+                        </View>
+                    )
+                    : null
+            }
+
+            {!tamam && bosYer > 0 ? <Yazi tur="kucuk" style={{ color: c.red }}>{bosYer} kişi reddetti ya da eksik: yerine personel seçiniz.</Yazi> : null}
+
+            {
+                degistirilebilir
+                    ? <Dugme metin="Davetleri Yönet" tur="cizgili" kucuk onPress={onDavet} pasif={islemde} />
+                    : null
+            }
 
             <View style={[s.satir, s.alt]}>
                 <Yazi tur="kucukKalin" style={{ flex: 1, color: t.siparis?.refNo ? c.blueDark : c.muted }}>{siparisMetni}</Yazi>

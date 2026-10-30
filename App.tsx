@@ -3,13 +3,16 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { useAuthStore } from './src/store/authStore';
-import { Platform, StatusBar } from 'react-native';
+import { Alert, Platform, StatusBar } from 'react-native';
 import { getUser } from './src/services/userService';
 import LoadingOverlay from './src/components/LoadingOverlay';
 import notificationService from './src/services/notificationService';
 import { updateFirebaseToken } from './src/api/user';
 import Toast from 'react-native-toast-message';
 import { yerelBildirimGoster } from './src/services/yerelBildirim';
+import { bekleyeniAc, bildirimAc } from './src/services/bildirimYonlendirme';
+import { bildirimHedefi } from './src/utils/mesaiDavet';
+import { navigationRef } from './src/navigation/navigationRef';
 import { getMessaging } from '@react-native-firebase/messaging';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { theme } from './src/theme/theme';
@@ -49,6 +52,14 @@ export default function App() {
             if (remoteMessage && remoteMessage.notification && remoteMessage.notification.body && remoteMessage.notification.title) {
                 // Uygulama acikken: Android bildirim alanina sesli bildirim (#505); iOS banner + sesi sistem gosterir (firebase.json).
                 yerelBildirimGoster(remoteMessage.notification.title, remoteMessage.notification.body);
+                // Ek mesai daveti / ret: yerel bildirim veri tasimaz, uygulama acikken dogrudan sorulur (#515).
+                if (bildirimHedefi(remoteMessage.data)) {
+                    Alert.alert(remoteMessage.notification.title, remoteMessage.notification.body, [
+                        { text: 'Sonra', style: 'cancel' },
+                        { text: 'Aç', onPress: () => bildirimAc(remoteMessage.data) },
+                    ]);
+                    return;
+                }
                 if (Platform.OS === 'ios')
                     return;
                 Toast.show({
@@ -62,6 +73,15 @@ export default function App() {
         return unsubscribe;
     }, []);
 
+    // Bildirime tiklama: arka plandayken ve uygulama kapaliyken (#515).
+    useEffect(() => {
+        const unsubscribe = getMessaging().onNotificationOpenedApp(remoteMessage => bildirimAc(remoteMessage?.data));
+
+        getMessaging().getInitialNotification().then(remoteMessage => bildirimAc(remoteMessage?.data)).catch(() => undefined);
+
+        return unsubscribe;
+    }, []);
+
     return (
         <GestureHandlerRootView style={{ backgroundColor: theme.colors.bg, flex: 1 }}>
             <SafeAreaProvider>
@@ -71,7 +91,7 @@ export default function App() {
                     backgroundColor={'transparent'}
                 />
 
-                <NavigationContainer>
+                <NavigationContainer ref={navigationRef} onReady={bekleyeniAc}>
                     <RootNavigator />
                 </NavigationContainer>
 

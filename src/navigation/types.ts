@@ -23,6 +23,10 @@ export type AppStackParamList = {
     MesaiPlanlama: undefined,
     /** 4.6: Mesai Planlama > Yeni Talep. */
     MesaiTalebiYeni: undefined,
+    /** Ek mesai daveti: Kaliyorum / Kalamiyorum (bildirimden talep kimligiyle acilir). */
+    EkMesaiDavet: { mesaiTalebiId?: string } | undefined,
+    /** Davetleri yonet: durumlar, yerine kisi secimi (ret / yanit yok bildiriminden acilir). */
+    EkMesaiDavetYonetim: { mesaiTalebiId: string },
     /** 4.4: Profilim > Mesai Gecmisim (son 12 ay). */
     MesaiGecmisi: undefined,
     /** 4.4: Mesai Gecmisim > ay detayi (gun gun kayitlar). */
