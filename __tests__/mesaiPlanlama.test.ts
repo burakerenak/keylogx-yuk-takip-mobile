@@ -228,3 +228,30 @@ describe('tarih ve metin', () => {
         expect(saatte(null)).toBe('');
     });
 });
+
+// #508 Mesai Talebi depo eslesmesi
+import { depoSatirlari, varsayilanDepo } from '../src/utils/mesaiPlanlama';
+
+describe('depo eşleşmesi', () => {
+    const S = (companyPoId: string, customerId: string, divisionId: string, divisionName: string) =>
+        ({ companyPoId, customerId, customerName: customerId + ' Müşteri', divisionId, divisionName, poName: 'Mesai', poNo: '1', etiket: '' });
+    const satirlar = [S('x1', 'X', 'b1', 'Depo-1'), S('x2', 'X', 'b2', 'Depo-2'), S('y1', 'Y', 'b1', 'Depo-1')];
+
+    it('eşleşme yoksa bütün satırlar', () => {
+        expect(depoSatirlari(satirlar, { mesaiNoktasiId: 'A', ad: 'A' })).toHaveLength(3);
+        expect(depoSatirlari(satirlar, undefined)).toHaveLength(3);
+    });
+
+    it('bölümsüz müşteri bütün bölümleri, bölümlü yalnız seçilenleri', () => {
+        expect(depoSatirlari(satirlar, { mesaiNoktasiId: 'A', ad: 'A', musteriler: [{ musteriId: 'X', bolumIdleri: [] }] }).map(x => x.companyPoId)).toEqual(['x1', 'x2']);
+        expect(depoSatirlari(satirlar, { mesaiNoktasiId: 'A', ad: 'A', musteriler: [{ musteriId: 'X', bolumIdleri: ['b2'] }] }).map(x => x.companyPoId)).toEqual(['x2']);
+    });
+
+    it('varsayılan depo: önceki seçim, sunucunun verdiği ya da tek depo', () => {
+        const depolar = [{ mesaiNoktasiId: 'A', ad: 'A' }, { mesaiNoktasiId: 'B', ad: 'B' }];
+        expect(varsayilanDepo(depolar, 'B')).toBe('B');
+        expect(varsayilanDepo(depolar, null)).toBeUndefined();
+        expect(varsayilanDepo(depolar, 'B', 'A')).toBe('A');
+        expect(varsayilanDepo([{ mesaiNoktasiId: 'A', ad: 'A' }], null)).toBe('A');
+    });
+});

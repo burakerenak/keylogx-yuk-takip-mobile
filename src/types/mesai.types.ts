@@ -139,12 +139,15 @@ export interface MesaiGecmisimResponse {
 export interface MesaiTalebiDepo {
     mesaiNoktasiId: string
     ad: string
+    /** Depo musteri / bolum eslesmesi (#508); bos = butun musteriler. bolumIdleri bos = musterinin butun bolumleri. */
+    musteriler?: { musteriId: string, bolumIdleri: string[] }[]
 }
 
 /** Musteri · Bolum · PO · PO No satiri (CompanyPo). */
 export interface MesaiPoSatiri {
     customerId: string
     customerName: string
+    divisionId?: string | null
     divisionName: string | null
     poName: string | null
     poNo: string | null
@@ -164,6 +167,10 @@ export interface MesaiTalebiSecenekler {
     araliklar: string[]
     /** Depo yetkili gorevlerdeki personel (isimle ayirma icin). */
     personeller: MesaiTalebiPersonel[]
+    /** Kullanici tek depoda yetkiliyse o depo (#508). */
+    varsayilanDepoId?: string | null
+    /** Kullanicinin depo yetkisi var mi (varsa depolar yalniz yetkili oldugu depolar). */
+    depoYetkisiVar?: boolean
 }
 
 /** PLAN = tarih >= bugun, TAMAM = tarih < bugun (yeniden eskiye). */

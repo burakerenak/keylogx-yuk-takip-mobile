@@ -9,7 +9,7 @@ import { AppStackParamList } from '../navigation/types';
 import { getMesaiTalebiSecenekler, kaydetMesaiTalebi } from '../api/mesai';
 import { MesaiTalebiSecenekler } from '../types/mesai.types';
 import { Dugme, EkranBaslik, Kart, SecimKutusu, Yazi } from '../ui';
-import { aralikCoz, aralikMetni, bolumListesi, kendiliginden, musteriListesi, poListesi, tarihSecenekleri } from '../utils/mesaiPlanlama';
+import { aralikCoz, aralikMetni, bolumListesi, depoSatirlari, kendiliginden, musteriListesi, poListesi, tarihSecenekleri, varsayilanDepo } from '../utils/mesaiPlanlama';
 
 const c = theme.colors;
 
@@ -58,14 +58,15 @@ export default function MesaiTalebiYeniScreen() {
             const s = await getMesaiTalebiSecenekler();
             const depolar = s?.depolar ?? [];
             const araliklar = s?.araliklar ?? [];
-            const musteriler = musteriListesi(s?.poSatirlari ?? []);
+            // #508: tek depoda yetkili kullanicida o depo; depo eslesmesine gore musteri / bolum sinirli, tek secenek kendiliginden.
+            const d = varsayilanDepo(depolar, s?.varsayilanDepoId, depo);
+            const kaynak = depoSatirlari(s?.poSatirlari ?? [], depolar.find(x => x.mesaiNoktasiId === d));
 
             setSecenekler(s);
-            setDepo(onceki => kendiliginden(depolar.map(x => ({ deger: x.mesaiNoktasiId, ad: x.ad })), onceki));
+            setDepo(d);
             setAralik(onceki => kendiliginden(araliklar.map(x => ({ deger: x, ad: x })), onceki));
 
-            const m = kendiliginden(musteriler, undefined);
-            musteriSec(m, s?.poSatirlari ?? []);
+            musteriSec(kendiliginden(musteriListesi(kaynak), undefined), kaynak);
         } catch {
             // Hata mesajini baglanti katmani gosterir; ekranda "Tekrar Dene" kalir.
         } finally {
@@ -75,7 +76,17 @@ export default function MesaiTalebiYeniScreen() {
 
     useEffect(() => { yukle(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const satirlar = useMemo(() => secenekler?.poSatirlari ?? [], [secenekler]);
+    const satirlar = useMemo(
+        () => depoSatirlari(secenekler?.poSatirlari ?? [], (secenekler?.depolar ?? []).find(x => x.mesaiNoktasiId === depo)),
+        [secenekler, depo],
+    );
+
+    /** Depo degisince musteri / bolum / PO yeni deponun eslesmesine gore sifirlanir (tek secenek kendiliginden). */
+    const depoSec = (deger: string) => {
+        const kaynak = depoSatirlari(secenekler?.poSatirlari ?? [], (secenekler?.depolar ?? []).find(x => x.mesaiNoktasiId === deger));
+        setDepo(deger);
+        musteriSec(kendiliginden(musteriListesi(kaynak), undefined), kaynak);
+    };
 
     // ------------------------------------------------------------ Kademeli secim
 
@@ -163,7 +174,7 @@ export default function MesaiTalebiYeniScreen() {
                                             etiket="Depo"
                                             secenekler={(secenekler.depolar ?? []).map(x => ({ deger: x.mesaiNoktasiId, ad: x.ad }))}
                                             deger={depo}
-                                            onSec={setDepo}
+                                            onSec={depoSec}
                                             bosMetin="Tanımlı depo yok"
                                         />
                                         <SecimKutusu etiket="Müşteri" secenekler={musteriler} deger={musteri} onSec={x => musteriSec(x)} bosMetin="Tanımlı PO yok" />
