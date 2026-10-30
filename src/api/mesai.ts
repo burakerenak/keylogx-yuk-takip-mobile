@@ -1,11 +1,14 @@
 import { api } from './client';
 import { ApiResponse } from '../types/api.types';
 import {
+    MesaiDavetItem,
+    MesaiDavetYanitRequest,
     MesaiDurumResponse,
     MesaiGecmisimRequest,
     MesaiGecmisimResponse,
     MesaiOkutRequest,
     MesaiOkutResponse,
+    MesaiTalebiDavetGuncelleRequest,
     MesaiTalebiItem,
     MesaiTalebiKaydetRequest,
     MesaiTalebiKisiDegistirRequest,
@@ -72,6 +75,27 @@ export const kaydetMesaiTalebi = async (body: MesaiTalebiKaydetRequest): Promise
 /** Mesai Planlama > kisi -/+ (en az 1). */
 export const kisiDegistirMesaiTalebi = async (body: MesaiTalebiKisiDegistirRequest): Promise<MesaiTalebiItem> => {
     const res = await api.post<ApiResponse<MesaiTalebiItem>>('/MesaiTalebi/KisiDegistir', body);
+
+    return res.data.data;
+};
+
+/** Ek mesai daveti: oturumdaki personelin davetleri. Ana sayfa karti sessiz ister. */
+export const getDavetlerim = async (sessiz?: boolean): Promise<MesaiDavetItem[]> => {
+    const res = await api.post<ApiResponse<MesaiDavetItem[]>>('/MesaiTalebi/Davetlerim', {}, { sessiz });
+
+    return res.data.data ?? [];
+};
+
+/** Kaliyorum / Kalamiyorum; guncel davet listesini doner. */
+export const davetYanit = async (body: MesaiDavetYanitRequest): Promise<MesaiDavetItem[]> => {
+    const res = await api.post<ApiResponse<MesaiDavetItem[]>>('/MesaiTalebi/DavetYanit', body);
+
+    return res.data.data ?? [];
+};
+
+/** Davetleri yonet: kisi ekle / cikar, kisi sayisi. */
+export const davetGuncelleMesaiTalebi = async (body: MesaiTalebiDavetGuncelleRequest): Promise<MesaiTalebiItem> => {
+    const res = await api.post<ApiResponse<MesaiTalebiItem>>('/MesaiTalebi/DavetGuncelle', body);
 
     return res.data.data;
 };

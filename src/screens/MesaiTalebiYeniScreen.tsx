@@ -9,6 +9,7 @@ import { AppStackParamList } from '../navigation/types';
 import { getMesaiTalebiSecenekler, kaydetMesaiTalebi } from '../api/mesai';
 import { MesaiTalebiSecenekler } from '../types/mesai.types';
 import { Dugme, EkranBaslik, Kart, SecimKutusu, Yazi } from '../ui';
+import { davetSayiHatasi, davetZorunlu } from '../utils/mesaiDavet';
 import { aralikCoz, aralikMetni, bolumListesi, depoSatirlari, kendiliginden, musteriListesi, poListesi, tarihSecenekleri, varsayilanDepo } from '../utils/mesaiPlanlama';
 
 const c = theme.colors;
@@ -23,8 +24,8 @@ const EN_FAZLA_KISI = 99;
  * - Secenekler MesaiTalebi/Secenekler'den: depolar, PO satirlari, saat araliklari, personeller.
  * - Tarih: bugun ve sonraki 30 gun. Musteri -> Bolum -> PO · PO No kademeli (poSatirlari'ndan turetilir);
  *   ust secim degisince alttaki secim sifirlanir, tek secenek kalirsa kendiliginden secilir.
- * - Kisi sayisi en az 1. Ayrilan kisiler istege bagli, en cok kisi sayisi kadar (#468, 21.10.2026; eskiden tek isim):
- *   secilenler kaldirilabilir rozet; kisi sayisi secilenlerin altina inerse uyari + kayit kapali (sunucu da reddeder).
+ * - Kisi sayisi en az 1. Bitisi gecmemis talepte kisi sayisi kadar personel zorunlu (#515; secilene ek mesai daveti gider):
+ *   secilenler kaldirilabilir rozet; sayi tutmazsa uyari + kayit kapali (sunucu da reddeder).
  * - Talebi Kaydet -> MesaiTalebi/Kaydet; basarida Mesai Planlama'ya donulur (liste odaklanmada yenilenir).
  */
 export default function MesaiTalebiYeniScreen() {
@@ -46,7 +47,7 @@ export default function MesaiTalebiYeniScreen() {
     const [kisiMetni, setKisiMetni] = useState('1');
     const kisi = Math.min(EN_FAZLA_KISI, parseInt(kisiMetni, 10) || 0);
     const setKisi = (n: number) => setKisiMetni(`${Math.min(EN_FAZLA_KISI, Math.max(1, n))}`);
-    /** Isimle ayrilan personeller (bos: yerler cikis sirasina gore dolar). */
+    /** Davet edilecek personeller. */
     const [isimler, setIsimler] = useState<string[]>([]);
     const isimEkle = (id: string) => setIsimler(o => (o.includes(id) ? o : [...o, id]));
     const isimCikar = (id: string) => setIsimler(o => o.filter(x => x !== id));
@@ -117,11 +118,13 @@ export default function MesaiTalebiYeniScreen() {
         !saat ? 'mesai saat aralığı' : null,
         kisi < 1 ? 'kişi sayısı' : null,
     ].filter(Boolean) as string[];
-    /** Ayrilan kisi sayisi kisi sayisini gecemez. */
+    /** Secilen personel kisi sayisini gecemez. */
     const fazlaIsim = isimler.length > kisi;
+    const personelZorunlu = davetZorunlu(tarih, saat?.bitis);
+    const eksikPersonel = personelZorunlu && isimler.length < kisi;
 
     const kaydet = async () => {
-        if (eksikler.length || fazlaIsim || !depo || !po || !saat || kisi < 1)
+        if (eksikler.length || fazlaIsim || eksikPersonel || !depo || !po || !saat || kisi < 1)
             return;
 
         setKaydediliyor(true);
@@ -225,7 +228,7 @@ export default function MesaiTalebiYeniScreen() {
                                                     : null
                                             }
                                             <SecimKutusu
-                                                etiket={`Ayrılan kişiler (isteğe bağlı) · ${isimler.length}/${Math.max(kisi, 1)}`}
+                                                etiket={`Personel${personelZorunlu ? '' : ' (isteğe bağlı)'} · ${isimler.length}/${Math.max(kisi, 1)}`}
                                                 secenekler={(secenekler.personeller ?? []).filter(x => !isimler.includes(x.personnelId)).map(x => ({ deger: x.personnelId, ad: x.ad }))}
                                                 deger={undefined}
                                                 onSec={isimEkle}
@@ -233,19 +236,21 @@ export default function MesaiTalebiYeniScreen() {
                                                 bosMetin="Eklenecek personel yok"
                                                 pasif={isimler.length >= kisi}
                                             />
-                                            <Yazi tur="kucuk" style={{ color: c.muted }}>Seçilen kişilere yer ayrılır; boş kalan yerler mesaiden çıkış sırasına göre dolar.</Yazi>
+                                            <Yazi tur="kucuk" style={{ color: c.muted }}>Seçilen kişilere ek mesai daveti gider.</Yazi>
                                         </View>
                                     </Kart>
 
                                     {
                                         fazlaIsim
-                                            ? <Yazi tur="kucuk" style={{ textAlign: 'center', color: c.red }}>Ayrılan kişi sayısı ({isimler.length}) kişi sayısından ({kisi}) fazla olamaz; kişi sayısını artırın ya da isim kaldırın.</Yazi>
+                                            ? <Yazi tur="kucuk" style={{ textAlign: 'center', color: c.red }}>Seçilen personel ({isimler.length}) kişi sayısından ({kisi}) fazla olamaz; kişi sayısını artırın ya da isim kaldırın.</Yazi>
+                                            : eksikPersonel
+                                            ? <Yazi tur="kucuk" style={{ textAlign: 'center', color: c.red }}>{davetSayiHatasi(isimler.length, kisi)}</Yazi>
                                             : eksikler.length
                                             ? <Yazi tur="kucuk" style={{ textAlign: 'center' }}>Kaydetmek için seçin: {eksikler.join(', ')}.</Yazi>
-                                            : <Text style={s.not}>Talep, aynı gün bu depoda saat aralığıyla kesişen Lojistik mesailerle sırayla dolar; sipariş ilk kişiyle açılır.</Text>
+                                            : <Text style={s.not}>Davetli kişiler o saatte QR okutunca talep dolar; sipariş ilk kişiyle açılır.</Text>
                                     }
 
-                                    <Dugme metin="Talebi Kaydet" onPress={kaydet} pasif={eksikler.length > 0 || fazlaIsim} yukleniyor={kaydediliyor} />
+                                    <Dugme metin="Talebi Kaydet" onPress={kaydet} pasif={eksikler.length > 0 || fazlaIsim || eksikPersonel} yukleniyor={kaydediliyor} />
                                 </ScrollView>
                             </KeyboardAvoidingView>
                         )
