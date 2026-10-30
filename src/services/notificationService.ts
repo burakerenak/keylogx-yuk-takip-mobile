@@ -29,7 +29,16 @@ class NotificationService {
                 return status === RESULTS.GRANTED;
             }
 
-            return true;
+            // Android 13+ (API 33) bildirim icin calisma zamani izni ister; istenmezse bildirimler hic gorunmez (#505).
+            // Daha eski Android'de kutuphane dogrudan izinli doner.
+            const { status } = await checkNotifications();
+
+            if (status === RESULTS.DENIED) {
+                const { status: newStatus } = await requestNotifications(['alert', 'sound']);
+                return newStatus === RESULTS.GRANTED;
+            }
+
+            return status === RESULTS.GRANTED;
         } catch (error) {
             return false;
         }
