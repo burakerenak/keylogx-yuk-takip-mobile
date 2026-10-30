@@ -99,6 +99,8 @@ export interface GetAmbarVoyageByIdResponse {
 export interface GetAmbarVoyageByIdResponseAmbar {
     ambarId: string
     refNo: string
+    /** Siparisin web'deki Not alani (yalniz okunur; Yuklerim > "Not var"). */
+    note?: string | null
     customerId?: string
     customerName?: string
     deliverFirmCustomerId: string

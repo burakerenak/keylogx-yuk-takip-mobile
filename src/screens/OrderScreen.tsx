@@ -22,11 +22,14 @@ import Card from '../components/Card';
 import { ambarSetDeliveryDate, ambarSetDeliveryEndDate, ambarSetLoadDate, ambarSetLoadEndDate } from '../api/ambar';
 import KanitFotograflari from '../components/KanitFotograflari';
 import { anlikKonum, konumAlanlari } from '../utils/konum';
+import SiparisNotuPenceresi, { NotRozeti } from '../components/SiparisNotuPenceresi';
 
 export default function OrderScreen() {
     const route = useRoute<RouteProp<AppStackParamList, 'Order'>>();
 
     const [data, setData] = useState<GetAmbarVoyageByIdResponse | undefined>(undefined);
+    /** Acik siparis notu penceresi (oneri C, 28.10.2026). */
+    const [acikNot, setAcikNot] = useState<{ not: string, refNo: string } | undefined>(undefined);
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
 
     useFocusEffect(
@@ -279,6 +282,8 @@ export default function OrderScreen() {
                                         <Yazi tur="kucuk">{item.createdDateStr}</Yazi>
                                     </View>
 
+                                    {item.note?.trim() ? <NotRozeti onPress={() => setAcikNot({ not: item.note!.trim(), refNo: item.refNo })} /> : null}
+
                                     <View style={{ gap: 10 }}>
                                         <View style={{ flexDirection: 'row', gap: 10 }}>
                                             <Dugme kucuk tur="cizgili" metin="Detay" onPress={() => navigation.navigate('Detail', { ambarId: item.ambarId })} style={{ flex: 1 }} />
@@ -310,6 +315,8 @@ export default function OrderScreen() {
                     </View>
                 )
             }
+
+            <SiparisNotuPenceresi not={acikNot?.not} refNo={acikNot?.refNo} onKapat={() => setAcikNot(undefined)} />
 
             <KanitFotograflari
                 isShown={kanitEkrani !== undefined}
