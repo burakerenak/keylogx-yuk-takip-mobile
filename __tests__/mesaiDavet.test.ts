@@ -1,6 +1,27 @@
-import { bildirimHedefi, DAVET_KALAMIYOR, DAVET_KALIYOR, davetDurumMetni, davetDurumTonu, davetSayiHatasi } from '../src/utils/mesaiDavet';
+import { bildirimHedefi, DAVET_KALAMIYOR, DAVET_KALIYOR, davetDurumMetni, davetDurumTonu, davetSayiHatasi , onayAkisinda } from '../src/utils/mesaiDavet';
+
+describe('onayAkisinda', () => {
+    it('bekliyor ve revize akista, onayli ve bos degil', () => {
+        expect(onayAkisinda(1)).toBe(true);
+        expect(onayAkisinda(3)).toBe(true);
+        expect(onayAkisinda(2)).toBe(false);
+        expect(onayAkisinda(null)).toBe(false);
+    });
+});
 
 describe('bildirimHedefi', () => {
+    it('onay bildirimi Onayda Bekleyenler sekmesini acar', () => {
+        expect(bildirimHedefi({ tur: 'ek_mesai_onay', talepId: 't1' })).toEqual({ ekran: 'MesaiPlanlama', parametre: { sekme: 'onay' } });
+    });
+
+    it('revize bildirimi talebi duzeltme ekranini acar', () => {
+        expect(bildirimHedefi({ tur: 'ek_mesai_revize', talepId: 't1' })).toEqual({ ekran: 'MesaiTalebiYeni', parametre: { mesaiTalebiId: 't1' } });
+    });
+
+    it('onaylandi bildirimi Mesai Planlama acar', () => {
+        expect(bildirimHedefi({ tur: 'ek_mesai_onaylandi', talepId: 't1' })).toEqual({ ekran: 'MesaiPlanlama', parametre: {} });
+    });
+
     it('davet bildirimi davet ekranini acar', () => {
         expect(bildirimHedefi({ tur: 'ek_mesai_davet', talepId: 't1' })).toEqual({ ekran: 'EkMesaiDavet', parametre: { mesaiTalebiId: 't1' } });
     });

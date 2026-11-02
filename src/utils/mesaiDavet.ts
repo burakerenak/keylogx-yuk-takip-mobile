@@ -7,6 +7,11 @@ export const DAVET_BEKLIYOR = 1;
 export const DAVET_KALIYOR = 2;
 export const DAVET_KALAMIYOR = 3;
 
+/** Ek mesai talebi onayi (02.11.2026). */
+export const ONAY_BEKLIYOR = 1;
+export const ONAY_REVIZE = 3;
+export const onayAkisinda = (durum: number | null | undefined): boolean => durum === ONAY_BEKLIYOR || durum === ONAY_REVIZE;
+
 export const davetDurumMetni = (durum: number | null | undefined): string => {
     switch (durum) {
         case DAVET_KALIYOR: return 'Kalıyor';
@@ -27,7 +32,9 @@ export const davetDurumTonu = (durum: number | null | undefined): 'yesil' | 'kir
 
 export type BildirimHedefi =
     | { ekran: 'EkMesaiDavet', parametre: { mesaiTalebiId?: string } }
-    | { ekran: 'EkMesaiDavetYonetim', parametre: { mesaiTalebiId: string } };
+    | { ekran: 'EkMesaiDavetYonetim', parametre: { mesaiTalebiId: string } }
+    | { ekran: 'MesaiPlanlama', parametre: { sekme?: 'onay' } }
+    | { ekran: 'MesaiTalebiYeni', parametre: { mesaiTalebiId: string } };
 
 /** Bildirim verisinden acilacak ekran; iptal ve mesai hatirlatmada ekran acilmaz (uygulama acilir). */
 export const bildirimHedefi = (veri: Record<string, unknown> | undefined | null): BildirimHedefi | undefined => {
@@ -39,6 +46,12 @@ export const bildirimHedefi = (veri: Record<string, unknown> | undefined | null)
         case 'ek_mesai_red':
         case 'ek_mesai_yanit_yok':
             return talepId ? { ekran: 'EkMesaiDavetYonetim', parametre: { mesaiTalebiId: talepId } } : undefined;
+        case 'ek_mesai_onay':
+            return { ekran: 'MesaiPlanlama', parametre: { sekme: 'onay' } };
+        case 'ek_mesai_onaylandi':
+            return { ekran: 'MesaiPlanlama', parametre: {} };
+        case 'ek_mesai_revize':
+            return talepId ? { ekran: 'MesaiTalebiYeni', parametre: { mesaiTalebiId: talepId } } : { ekran: 'MesaiPlanlama', parametre: {} };
         default:
             return undefined;
     }

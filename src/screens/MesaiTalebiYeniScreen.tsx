@@ -2,15 +2,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Minus, Plus, X } from 'lucide-react-native';
 import { theme } from '../theme/theme';
 import { AppStackParamList } from '../navigation/types';
-import { getMesaiTalebiSecenekler, kaydetMesaiTalebi } from '../api/mesai';
-import { MesaiTalebiSecenekler } from '../types/mesai.types';
+import { getMesaiTalebiListe, getMesaiTalebiSecenekler, kaydetMesaiTalebi } from '../api/mesai';
+import { MesaiTalebiItem, MesaiTalebiSecenekler } from '../types/mesai.types';
 import { Dugme, EkranBaslik, Kart, SecimKutusu, Yazi } from '../ui';
 import { davetSayiHatasi } from '../utils/mesaiDavet';
-import { aralikCoz, aralikMetni, bolumListesi, depoSatirlari, gecmisTarihSecenekleri, kendiliginden, musteriListesi, poListesi, tarihSecenekleri, varsayilanDepo } from '../utils/mesaiPlanlama';
+import { aralikCoz, aralikMetni, bolumAnahtari, bolumListesi, depoSatirlari, gecmisTarihSecenekleri, kendiliginden, musteriListesi, poListesi, tarihSecenekleri, trTarih, varsayilanDepo } from '../utils/mesaiPlanlama';
 
 const c = theme.colors;
 
@@ -27,18 +27,26 @@ const EN_FAZLA_KISI = 99;
  * - Kisi sayisi en az 1. Bitisi gecmemis talepte kisi sayisi kadar personel zorunlu (#515; secilene ek mesai daveti gider):
  *   secilenler kaldirilabilir rozet; sayi tutmazsa uyari + kayit kapali (sunucu da reddeder).
  * - Talebi Kaydet -> MesaiTalebi/Kaydet; basarida Mesai Planlama'ya donulur (liste odaklanmada yenilenir).
+ * - Revize (02.11.2026): mesaiTalebiId ile talep yuklenir, revize aciklamasi gorunur; kaydedince yeniden onaya gider.
  */
 export default function MesaiTalebiYeniScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+    const talepId = useRoute<RouteProp<AppStackParamList, 'MesaiTalebiYeni'>>().params?.mesaiTalebiId;
 
+    const [duzenlenen, setDuzenlenen] = useState<MesaiTalebiItem | undefined>(undefined);
     const [secenekler, setSecenekler] = useState<MesaiTalebiSecenekler | undefined>(undefined);
     const [yukleniyor, setYukleniyor] = useState(true);
     const [kaydediliyor, setKaydediliyor] = useState(false);
 
     const [gecmis, setGecmis] = useState(false);
-    const tarihler = useMemo(() => gecmis ? gecmisTarihSecenekleri(new Date(), 31) : tarihSecenekleri(new Date(), 31), [gecmis]);
+    const tarihListesi = useMemo(() => gecmis ? gecmisTarihSecenekleri(new Date(), 31) : tarihSecenekleri(new Date(), 31), [gecmis]);
 
-    const [tarih, setTarih] = useState<string>(tarihler[0].deger);
+    const [tarih, setTarih] = useState<string>(tarihListesi[0].deger);
+    // Duzenlenen talebin tarihi listede olmayabilir (31 gunden eski).
+    const tarihler = useMemo(
+        () => tarihListesi.some(x => x.deger === tarih) || !duzenlenen ? tarihListesi : [{ deger: tarih, ad: trTarih(tarih) }, ...tarihListesi],
+        [tarihListesi, tarih, duzenlenen],
+    );
     const [depo, setDepo] = useState<string | undefined>(undefined);
     const [musteri, setMusteri] = useState<string | undefined>(undefined);
     const [bolum, setBolum] = useState<string | undefined>(undefined);
@@ -69,6 +77,30 @@ export default function MesaiTalebiYeniScreen() {
             setAralik(onceki => kendiliginden(araliklar.map(x => ({ deger: x, ad: x })), onceki));
 
             musteriSec(kendiliginden(musteriListesi(kaynak), undefined), kaynak);
+
+            if (talepId) {
+                const t = (await getMesaiTalebiListe({ mesaiTalebiId: talepId }))[0];
+
+                if (t) {
+                    const satir = (s?.poSatirlari ?? []).find(x => x.companyPoId === t.companyPoId);
+                    const saatler = aralikCoz(t.aralik);
+                    const secili = araliklar.find(x => {
+                        const a = aralikCoz(x);
+
+                        return a?.baslangic === saatler?.baslangic && a?.bitis === saatler?.bitis;
+                    });
+
+                    setDuzenlenen(t);
+                    setTarih(t.tarih.substring(0, 10));
+                    setDepo(t.mesaiNoktasiId);
+                    setMusteri(satir?.customerId);
+                    setBolum(satir ? bolumAnahtari(satir) : undefined);
+                    setPo(t.companyPoId);
+                    setAralik(secili ?? `${t.baslangic}-${t.bitis}`);
+                    setKisiMetni(`${t.kisiSayisi}`);
+                    setIsimler((t.ayrilanlar ?? []).map(x => x.personnelId));
+                }
+            }
         } catch {
             // Hata mesajini baglanti katmani gosterir; ekranda "Tekrar Dene" kalir.
         } finally {
@@ -138,6 +170,8 @@ export default function MesaiTalebiYeniScreen() {
 
         try {
             await kaydetMesaiTalebi({
+                mesaiTalebiId: duzenlenen?.mesaiTalebiId,
+                aciklama: duzenlenen?.aciklama,
                 tarih,
                 mesaiNoktasiId: depo,
                 companyPoId: po,
@@ -163,7 +197,7 @@ export default function MesaiTalebiYeniScreen() {
     return (
         <View style={s.sayfa}>
             <SafeAreaView edges={['top']} style={{ backgroundColor: c.white }} />
-            <EkranBaslik baslik="Yeni Talep" altBaslik="Mesai Planlama" onGeri={() => navigation.goBack()} />
+            <EkranBaslik baslik={talepId ? 'Talebi Düzenle' : 'Yeni Talep'} altBaslik="Mesai Planlama" onGeri={() => navigation.goBack()} />
 
             {
                 yukleniyor
@@ -178,6 +212,17 @@ export default function MesaiTalebiYeniScreen() {
                         : (
                             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                                 <ScrollView contentContainerStyle={s.govde} keyboardShouldPersistTaps="handled">
+                                    {
+                                        duzenlenen?.revizeNotu
+                                            ? (
+                                                <Kart style={{ gap: 4 }}>
+                                                    <Yazi tur="kucukKalin" style={{ color: c.red }}>Revize istendi</Yazi>
+                                                    <Yazi tur="govde">{duzenlenen.revizeNotu}</Yazi>
+                                                    <Yazi tur="kucuk">Düzeltip kaydedince talep yeniden onaya gider.</Yazi>
+                                                </Kart>
+                                            )
+                                            : null
+                                    }
                                     <Kart style={{ gap: 14 }}>
                                         <SecimKutusu etiket="Tarih" secenekler={tarihler} deger={tarih} onSec={setTarih} />
                                         <Dugme metin={gecmis ? 'Bugün ve sonrasını seç' : 'Geçmiş tarih seç'} tur="cizgili" onPress={tarihYonuDegistir} />
@@ -193,7 +238,7 @@ export default function MesaiTalebiYeniScreen() {
                                         <SecimKutusu etiket="PO · PO No" secenekler={poler} deger={po} onSec={setPo} bosMetin="Önce bölüm seçin" />
                                         <SecimKutusu
                                             etiket="Mesai saat aralığı"
-                                            secenekler={(secenekler.araliklar ?? []).map(x => ({ deger: x, ad: aralikMetni(x) }))}
+                                            secenekler={[...(secenekler.araliklar ?? []), ...(aralik && !(secenekler.araliklar ?? []).includes(aralik) ? [aralik] : [])].map(x => ({ deger: x, ad: aralikMetni(x) }))}
                                             deger={aralik}
                                             onSec={setAralik}
                                             bosMetin="Tanımlı saat aralığı yok"
@@ -237,14 +282,14 @@ export default function MesaiTalebiYeniScreen() {
                                             }
                                             <SecimKutusu
                                                 etiket={`Personel · ${isimler.length}/${Math.max(kisi, 1)}`}
-                                                secenekler={(secenekler.personeller ?? []).filter(x => !isimler.includes(x.personnelId)).map(x => ({ deger: x.personnelId, ad: x.ad }))}
+                                                secenekler={(secenekler.personeller ?? []).filter(x => !isimler.includes(x.personnelId) && !(duzenlenen?.reddedenler ?? []).some(r => r.personnelId === x.personnelId)).map(x => ({ deger: x.personnelId, ad: x.ad }))}
                                                 deger={undefined}
                                                 onSec={isimEkle}
                                                 yerTutucu={isimler.length >= kisi ? 'Kişi sayısı kadar seçildi' : 'Kişi ekle'}
                                                 bosMetin="Eklenecek personel yok"
                                                 pasif={isimler.length >= kisi}
                                             />
-                                            <Yazi tur="kucuk" style={{ color: c.muted }}>Seçilen kişilere ek mesai daveti gider.</Yazi>
+                                            <Yazi tur="kucuk" style={{ color: c.muted }}>Seçilen kişilere ek mesai daveti gider; onay gerekiyorsa onaydan sonra.</Yazi>
                                         </View>
                                     </Kart>
 
@@ -258,7 +303,7 @@ export default function MesaiTalebiYeniScreen() {
                                             : <Text style={s.not}>Davetli kişiler o saatte QR okutunca talep dolar; sipariş ilk kişiyle açılır.</Text>
                                     }
 
-                                    <Dugme metin="Talebi Kaydet" onPress={kaydet} pasif={eksikler.length > 0 || fazlaIsim || eksikPersonel} yukleniyor={kaydediliyor} />
+                                    <Dugme metin={duzenlenen?.revizeNotu ? 'Düzelt ve Onaya Gönder' : 'Talebi Kaydet'} onPress={kaydet} pasif={eksikler.length > 0 || fazlaIsim || eksikPersonel} yukleniyor={kaydediliyor} />
                                 </ScrollView>
                             </KeyboardAvoidingView>
                         )

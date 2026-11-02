@@ -107,7 +107,7 @@ export type SecimOgesi = { deger: string, ad: string };
 /** Bolum adi bos gelen PO satirlari icin gorunen ad. */
 export const BOLUMSUZ = '(Bölüm yok)';
 
-const bolumAnahtari = (x: MesaiPoSatiri) => x.divisionName ?? '';
+export const bolumAnahtari = (x: MesaiPoSatiri) => x.divisionName ?? '';
 
 /** PO satirlarindaki musteriler (tekil, ilk gorulme sirasiyla). */
 export const musteriListesi = (satirlar: MesaiPoSatiri[]): SecimOgesi[] => {

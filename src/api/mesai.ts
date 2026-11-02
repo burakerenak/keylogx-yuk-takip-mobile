@@ -100,6 +100,20 @@ export const davetGuncelleMesaiTalebi = async (body: MesaiTalebiDavetGuncelleReq
     return res.data.data;
 };
 
+/** Onay yetkilisi: talebi onaylar, secilen personele davet gider. */
+export const onaylaMesaiTalebi = async (mesaiTalebiId: string): Promise<MesaiTalebiItem> => {
+    const res = await api.post<ApiResponse<MesaiTalebiItem>>('/MesaiTalebi/Onayla', { mesaiTalebiId });
+
+    return res.data.data;
+};
+
+/** Onay yetkilisi: aciklamayla revize ister, talebi acana bildirim gider. */
+export const revizeMesaiTalebi = async (mesaiTalebiId: string, not: string): Promise<MesaiTalebiItem> => {
+    const res = await api.post<ApiResponse<MesaiTalebiItem>>('/MesaiTalebi/Revize', { mesaiTalebiId, not });
+
+    return res.data.data;
+};
+
 export const silMesaiTalebi = async (ids: string[]): Promise<void> => {
     await api.post<ApiResponse<unknown>>('/MesaiTalebi/Sil', { ids });
 };

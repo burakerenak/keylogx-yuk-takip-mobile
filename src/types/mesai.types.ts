@@ -169,12 +169,14 @@ export interface MesaiTalebiSecenekler {
     personeller: MesaiTalebiPersonel[]
     /** Kullanici tek depoda yetkiliyse o depo (#508). */
     varsayilanDepoId?: string | null
+    /** Oturumdaki kullanici ek mesai talebi onaylayabilir (Onayda Bekleyenler). */
+    onayYetkisi?: boolean
     /** Kullanicinin depo yetkisi var mi (varsa depolar yalniz yetkili oldugu depolar). */
     depoYetkisiVar?: boolean
 }
 
 /** PLAN = tarih >= bugun, TAMAM = tarih < bugun (yeniden eskiye). */
-export type MesaiTalebiDurumu = 'PLAN' | 'TAMAM';
+export type MesaiTalebiDurumu = 'PLAN' | 'TAMAM' | 'ONAY';
 
 export interface MesaiTalebiListeRequest {
     mesaiTalebiId?: string;
@@ -234,6 +236,14 @@ export interface MesaiTalebiYerlesen {
     faturaDk: number
 }
 
+export interface MesaiTalebiOnayKaydi {
+    islem: number
+    islemAdi: string
+    aciklama?: string | null
+    kullanici?: string | null
+    tarih: string
+}
+
 export interface MesaiTalebiItem {
     mesaiTalebiId: string
     /** "yyyy-MM-dd" */
@@ -259,6 +269,12 @@ export interface MesaiTalebiItem {
     reddedenler?: MesaiTalebiAyrilan[] | null
     /** Talepte davet gitmis kisi var: kisi artirmak icin personel secilir. */
     davetModu?: boolean
+    /** 1 onay bekliyor, 2 onaylandi, 3 revize; bos ise onay akisi disinda. */
+    onayDurumu?: number | null
+    /** Son revize aciklamasi (talep revizedeyken). */
+    revizeNotu?: string | null
+    onayGecmisi?: MesaiTalebiOnayKaydi[] | null
+    aciklama?: string | null
     yerlesenler: MesaiTalebiYerlesen[] | null
     yerlesenSayisi: number
     eksik: number

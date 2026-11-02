@@ -20,9 +20,10 @@ export type AppStackParamList = {
     /** 4.4: QR ile mesai giris / cikis (kamera -> sonuc; 4.6'da is tipi yalniz eski sunucu sorarsa). */
     MesaiQr: undefined,
     /** 4.6: Mesai Planlama (Ek Mesai Talepleri): Planlananlar / Tamamlananlar. */
-    MesaiPlanlama: undefined,
+    MesaiPlanlama: { sekme?: 'onay' } | undefined,
     /** 4.6: Mesai Planlama > Yeni Talep. */
-    MesaiTalebiYeni: undefined,
+    /** mesaiTalebiId: revizedeki talebi duzeltme. */
+    MesaiTalebiYeni: { mesaiTalebiId?: string } | undefined,
     /** Ek mesai daveti: Kaliyorum / Kalamiyorum (bildirimden talep kimligiyle acilir). */
     EkMesaiDavet: { mesaiTalebiId?: string } | undefined,
     /** Davetleri yonet: durumlar, yerine kisi secimi (ret / yanit yok bildiriminden acilir). */
