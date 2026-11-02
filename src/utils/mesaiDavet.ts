@@ -1,20 +1,11 @@
 /**
- * Ek mesai daveti (30.10.2026, #515). Bitisi gecmemis talepte kisi sayisi kadar personel secilir; secilene davet bildirimi gider.
+ * Ek mesai daveti (30.10.2026, #515). Yeni talepte (gecmis tarihli de, 02.11.2026) kisi sayisi kadar personel secilir; secilene davet bildirimi gider.
  * Kurallari sunucu da denetler; burasi ekrani ve bildirime tiklaninca acilacak yeri belirler.
  */
 
 export const DAVET_BEKLIYOR = 1;
 export const DAVET_KALIYOR = 2;
 export const DAVET_KALAMIYOR = 3;
-
-/** "2026-10-30" + "20:00": bitis simdiden sonra mi. Saat secilmediyse gun bazinda bakilir. */
-export const davetZorunlu = (tarih: string | undefined, bitis: string | undefined, simdi: Date = new Date()): boolean => {
-    if (!tarih)
-        return true;
-    const [y, a, g] = tarih.substring(0, 10).split('-').map(Number);
-    const [s, d] = (bitis ?? '23:59').split(':').map(Number);
-    return new Date(y, a - 1, g, s, d).getTime() > simdi.getTime();
-};
 
 export const davetDurumMetni = (durum: number | null | undefined): string => {
     switch (durum) {

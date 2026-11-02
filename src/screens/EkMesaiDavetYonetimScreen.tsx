@@ -33,7 +33,7 @@ export default function EkMesaiDavetYonetimScreen() {
 
     const yukle = useCallback(async () => {
         try {
-            const [liste, s] = await Promise.all([getMesaiTalebiListe({ durum: 'PLAN' }), getMesaiTalebiSecenekler()]);
+            const [liste, s] = await Promise.all([getMesaiTalebiListe({ mesaiTalebiId: talepId }), getMesaiTalebiSecenekler()]);
             const t = liste.find(x => x.mesaiTalebiId === talepId) ?? null;
 
             setSecenekler(s);

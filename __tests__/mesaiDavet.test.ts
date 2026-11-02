@@ -1,23 +1,4 @@
-import { bildirimHedefi, DAVET_KALAMIYOR, DAVET_KALIYOR, davetDurumMetni, davetDurumTonu, davetSayiHatasi, davetZorunlu } from '../src/utils/mesaiDavet';
-
-const simdi = new Date(2026, 9, 30, 15, 0);
-
-describe('davetZorunlu', () => {
-    it('bitisi gecmemis talepte zorunlu', () => {
-        expect(davetZorunlu('2026-10-31', '20:00', simdi)).toBe(true);
-        expect(davetZorunlu('2026-10-30', '20:00', simdi)).toBe(true);
-    });
-
-    it('bitisi gecmis talepte zorunlu degil', () => {
-        expect(davetZorunlu('2026-10-30', '14:00', simdi)).toBe(false);
-        expect(davetZorunlu('2026-10-29', '20:00', simdi)).toBe(false);
-    });
-
-    it('saat secilmediyse gun bazinda', () => {
-        expect(davetZorunlu('2026-10-30', undefined, simdi)).toBe(true);
-        expect(davetZorunlu('2026-10-29', undefined, simdi)).toBe(false);
-    });
-});
+import { bildirimHedefi, DAVET_KALAMIYOR, DAVET_KALIYOR, davetDurumMetni, davetDurumTonu, davetSayiHatasi } from '../src/utils/mesaiDavet';
 
 describe('bildirimHedefi', () => {
     it('davet bildirimi davet ekranini acar', () => {

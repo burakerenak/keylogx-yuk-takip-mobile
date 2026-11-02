@@ -177,6 +177,7 @@ export interface MesaiTalebiSecenekler {
 export type MesaiTalebiDurumu = 'PLAN' | 'TAMAM';
 
 export interface MesaiTalebiListeRequest {
+    mesaiTalebiId?: string;
     /** "yyyy-MM-dd" */
     baslangic?: string
     bitis?: string
