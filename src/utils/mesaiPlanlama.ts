@@ -266,6 +266,15 @@ export const tarihSecenekleri = (bugun: Date, gunSayisi = 31): SecimOgesi[] =>
         return { deger: iso, ad: `${trTarih(iso)} · ${ek}` };
     });
 
+/** Gecmis tarihler, dunden geriye (02.11.2026: talep gecmise de acilir). */
+export const gecmisTarihSecenekleri = (bugun: Date, gunSayisi = 31): SecimOgesi[] =>
+    Array.from({ length: gunSayisi }, (_, i) => {
+        const d = new Date(bugun.getFullYear(), bugun.getMonth(), bugun.getDate() - i - 1);
+        const iso = isoTarih(d);
+
+        return { deger: iso, ad: `${trTarih(iso)} · ${i === 0 ? 'Dün' : GUNLER[d.getDay()]}` };
+    });
+
 /** Iso tarihe gun ekler (eksi olabilir). */
 export const gunEkle = (bugun: Date, gun: number): string =>
     isoTarih(new Date(bugun.getFullYear(), bugun.getMonth(), bugun.getDate() + gun));

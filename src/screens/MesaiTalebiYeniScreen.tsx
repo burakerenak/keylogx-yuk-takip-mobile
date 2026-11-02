@@ -9,8 +9,8 @@ import { AppStackParamList } from '../navigation/types';
 import { getMesaiTalebiSecenekler, kaydetMesaiTalebi } from '../api/mesai';
 import { MesaiTalebiSecenekler } from '../types/mesai.types';
 import { Dugme, EkranBaslik, Kart, SecimKutusu, Yazi } from '../ui';
-import { davetSayiHatasi, davetZorunlu } from '../utils/mesaiDavet';
-import { aralikCoz, aralikMetni, bolumListesi, depoSatirlari, kendiliginden, musteriListesi, poListesi, tarihSecenekleri, varsayilanDepo } from '../utils/mesaiPlanlama';
+import { davetSayiHatasi } from '../utils/mesaiDavet';
+import { aralikCoz, aralikMetni, bolumListesi, depoSatirlari, gecmisTarihSecenekleri, kendiliginden, musteriListesi, poListesi, tarihSecenekleri, varsayilanDepo } from '../utils/mesaiPlanlama';
 
 const c = theme.colors;
 
@@ -35,7 +35,8 @@ export default function MesaiTalebiYeniScreen() {
     const [yukleniyor, setYukleniyor] = useState(true);
     const [kaydediliyor, setKaydediliyor] = useState(false);
 
-    const tarihler = useMemo(() => tarihSecenekleri(new Date(), 31), []);
+    const [gecmis, setGecmis] = useState(false);
+    const tarihler = useMemo(() => gecmis ? gecmisTarihSecenekleri(new Date(), 31) : tarihSecenekleri(new Date(), 31), [gecmis]);
 
     const [tarih, setTarih] = useState<string>(tarihler[0].deger);
     const [depo, setDepo] = useState<string | undefined>(undefined);
@@ -120,8 +121,14 @@ export default function MesaiTalebiYeniScreen() {
     ].filter(Boolean) as string[];
     /** Secilen personel kisi sayisini gecemez. */
     const fazlaIsim = isimler.length > kisi;
-    const personelZorunlu = davetZorunlu(tarih, saat?.bitis);
-    const eksikPersonel = personelZorunlu && isimler.length < kisi;
+    const eksikPersonel = isimler.length < kisi;
+
+    const tarihYonuDegistir = () => {
+        const yeni = !gecmis;
+
+        setGecmis(yeni);
+        setTarih((yeni ? gecmisTarihSecenekleri(new Date(), 31) : tarihSecenekleri(new Date(), 31))[0].deger);
+    };
 
     const kaydet = async () => {
         if (eksikler.length || fazlaIsim || eksikPersonel || !depo || !po || !saat || kisi < 1)
@@ -173,6 +180,7 @@ export default function MesaiTalebiYeniScreen() {
                                 <ScrollView contentContainerStyle={s.govde} keyboardShouldPersistTaps="handled">
                                     <Kart style={{ gap: 14 }}>
                                         <SecimKutusu etiket="Tarih" secenekler={tarihler} deger={tarih} onSec={setTarih} />
+                                        <Dugme metin={gecmis ? 'Bugün ve sonrasını seç' : 'Geçmiş tarih seç'} tur="cizgili" onPress={tarihYonuDegistir} />
                                         <SecimKutusu
                                             etiket="Depo"
                                             secenekler={(secenekler.depolar ?? []).map(x => ({ deger: x.mesaiNoktasiId, ad: x.ad }))}
@@ -228,7 +236,7 @@ export default function MesaiTalebiYeniScreen() {
                                                     : null
                                             }
                                             <SecimKutusu
-                                                etiket={`Personel${personelZorunlu ? '' : ' (isteğe bağlı)'} · ${isimler.length}/${Math.max(kisi, 1)}`}
+                                                etiket={`Personel · ${isimler.length}/${Math.max(kisi, 1)}`}
                                                 secenekler={(secenekler.personeller ?? []).filter(x => !isimler.includes(x.personnelId)).map(x => ({ deger: x.personnelId, ad: x.ad }))}
                                                 deger={undefined}
                                                 onSec={isimEkle}

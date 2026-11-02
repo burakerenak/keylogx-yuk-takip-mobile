@@ -17,6 +17,7 @@ import {
     musteriListesi,
     paraMetni,
     poListesi,
+    gecmisTarihSecenekleri,
     tarihSecenekleri,
     trTarih,
 } from '../src/utils/mesaiPlanlama';
@@ -198,6 +199,15 @@ describe('doluluk', () => {
 // ---------------------------------------------------------------- Tarih, metin
 
 describe('tarih ve metin', () => {
+    test('gecmisTarihSecenekleri dunden geriye gider, 31 gun', () => {
+        const liste = gecmisTarihSecenekleri(new Date(2026, 10, 2, 15, 30));
+
+        expect(liste).toHaveLength(31);
+        expect(liste[0]).toEqual({ deger: '2026-11-01', ad: '01.11.2026 · Dün' });
+        expect(liste[1].deger).toBe('2026-10-31');
+        expect(liste[30].deger).toBe('2026-10-02');
+    });
+
     test('tarihSecenekleri bugunden baslar', () => {
         const liste = tarihSecenekleri(new Date(2026, 9, 18, 15, 30), 3);
 
