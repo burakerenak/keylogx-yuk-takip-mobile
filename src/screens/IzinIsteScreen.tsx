@@ -13,8 +13,8 @@ import { isoTarih } from '../utils/mesaiPlanlama';
 
 const c = theme.colors;
 
-/** Sunucu en cok 30 gun geriye izin istegi kabul eder (rapor sonradan bildirilir). */
-const GERI_GUN = 30;
+/** Gecmis gun icin izin istenemez (Burak, 03.11.2026): rapor gibi gecmis kayitlari insan kaynaklari web'den girer. */
+const GERI_GUN = 0;
 const ILERI_GUN = 180;
 
 /**

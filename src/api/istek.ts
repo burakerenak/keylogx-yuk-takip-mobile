@@ -3,6 +3,7 @@ import { ApiResponse } from '../types/api.types';
 import {
     BekleyenIsteklerResponse,
     IstekKararRequest,
+    IstekOzet,
     IzinIsteRequest,
     IzinItem,
     TakasIsteRequest,
@@ -14,6 +15,15 @@ import {
  * IK Faz 3 (03.11.2026): Vardiyam ve izinlerim, izin / gun degisimi istegi, onaylayicinin kararlari.
  * Hata mesajini (isSuccess=false) baglanti katmani gosterir ve istek reddedilir.
  */
+
+/**
+ * Rozet sayilari (ana ekran ve Profilim odaklaninca). Sessiz: hata olursa rozet gorunmez, uyari penceresi acilmaz.
+ */
+export const getIstekOzet = async (): Promise<IstekOzet> => {
+    const res = await api.post<ApiResponse<IstekOzet>>('/Istek/Ozet', {}, { sessiz: true });
+
+    return res.data.data;
+};
 
 /** Bugunden 14 gunluk vardiya, yillik izin bakiyesi, isteklerim, form secenekleri ve onaylayicilar. */
 export const getVardiyam = async (): Promise<VardiyamResponse> => {

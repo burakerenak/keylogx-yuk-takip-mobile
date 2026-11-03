@@ -69,5 +69,13 @@ export const sayi = (n: number | null | undefined): string => {
     return Number.isInteger(v) ? String(v) : v.toFixed(1).replace('.', ',');
 };
 
+/** Sayi rozeti metni: 0 ya da gecersizse null (rozet yok), 99 ustu "99+". */
+export const rozetMetni = (n: number | null | undefined): string | null => {
+    const v = Number.isFinite(n as number) ? Math.floor(n as number) : 0;
+    if (v <= 0) return null;
+
+    return v > 99 ? '99+' : String(v);
+};
+
 /** Vardiya hucresi metni: izin varsa izin kodu, yoksa vardiya kodu, plan yoksa "—". */
 export const gunKodu = (g: { kod: string | null, izinKodu: string | null }): string => g.izinKodu ?? g.kod ?? '—';

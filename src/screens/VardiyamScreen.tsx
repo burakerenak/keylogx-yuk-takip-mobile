@@ -126,6 +126,7 @@ export default function VardiyamScreen() {
                                     <Kart key={x.izinId} style={{ gap: 6 }}>
                                         <View style={s.satir}>
                                             <Yazi tur="govdeKalin" style={{ flex: 1 }}>{x.turAdi}</Yazi>
+                                            {x.yeni ? <Etiket metin="Yeni" ton="mor" /> : null}
                                             <Etiket metin={x.durumAdi || istekDurumAdi(x.durum)} ton={istekDurumTonu(x.durum)} />
                                         </View>
                                         <Yazi tur="kucuk">{x.baslangicStr} – {x.bitisStr} · {x.gunSayisi} gün{x.dusenGun != null ? ` (izinden düşen ${x.dusenGun})` : ''}</Yazi>
@@ -144,6 +145,7 @@ export default function VardiyamScreen() {
                                     <Kart key={x.takasId} style={{ gap: 6 }}>
                                         <View style={s.satir}>
                                             <Yazi tur="govdeKalin" style={{ flex: 1 }}>{x.tarihStr}</Yazi>
+                                            {x.yeni ? <Etiket metin="Yeni" ton="mor" /> : null}
                                             <Etiket metin={x.durumAdi || istekDurumAdi(x.durum)} ton={istekDurumTonu(x.durum)} />
                                         </View>
                                         <Yazi tur="kucuk">

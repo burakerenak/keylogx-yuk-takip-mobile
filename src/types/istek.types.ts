@@ -51,6 +51,8 @@ export interface IzinItem {
     /** Yillik izinden dusen gun (hafta tatili ve resmi tatil haric). */
     dusenGun: number | null
     kararVerebilir: boolean
+    /** Personelin henuz gormedigi karar (Vardiyam acilinca sunucu gorudu yapar). */
+    yeni?: boolean
 }
 
 export interface TakasItem {
@@ -75,6 +77,8 @@ export interface TakasItem {
     redNedeni: string | null
     olusturmaZamani: string
     kararVerebilir: boolean
+    /** Personelin henuz gormedigi karar. */
+    yeni?: boolean
 }
 
 export interface IzinBakiyeItem {
@@ -125,6 +129,12 @@ export interface VardiyamResponse {
 export interface BekleyenIsteklerResponse {
     izinler: IzinItem[]
     takaslar: TakasItem[]
+}
+
+/** Bildirim kacarsa sayilar: onaylayicinin bekleyenleri (ana ekran) ve personelin gormedigi kararlar (Profilim). */
+export interface IstekOzet {
+    onayBekleyen: number
+    yeniKarar: number
 }
 
 export interface IzinIsteRequest {

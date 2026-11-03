@@ -1,4 +1,4 @@
-import { bakiyeOzeti, BEKLIYOR, gunKodu, gunSayisi, istekDurumAdi, istekDurumTonu, izinTarihSecenekleri, ONAYLI, REDDEDILDI, sayi } from '../src/utils/istek';
+import { bakiyeOzeti, BEKLIYOR, gunKodu, gunSayisi, istekDurumAdi, istekDurumTonu, izinTarihSecenekleri, ONAYLI, REDDEDILDI, rozetMetni, sayi } from '../src/utils/istek';
 import { aralikCoz, aralikMetni, talepAralikMetni } from '../src/utils/mesaiPlanlama';
 import { bildirimHedefi } from '../src/utils/mesaiDavet';
 
@@ -72,5 +72,22 @@ describe('bildirim yonlendirme', () => {
         expect(bildirimHedefi({ tur: 'takas_istek' })).toEqual({ ekran: 'IzinOnaylari', parametre: {} });
         expect(bildirimHedefi({ tur: 'izin_karar' })).toEqual({ ekran: 'Vardiyam', parametre: {} });
         expect(bildirimHedefi({ tur: 'takas_karar' })).toEqual({ ekran: 'Vardiyam', parametre: {} });
+    });
+});
+
+describe('rozet ve izin tarihleri', () => {
+    test('rozet: 0 ve gecersizde yok, 99 ustu 99+', () => {
+        expect(rozetMetni(0)).toBeNull();
+        expect(rozetMetni(undefined)).toBeNull();
+        expect(rozetMetni(-2)).toBeNull();
+        expect(rozetMetni(3)).toBe('3');
+        expect(rozetMetni(120)).toBe('99+');
+    });
+
+    test('izin istegi bugunden baslar (gecmis gun yok)', () => {
+        const l = izinTarihSecenekleri(new Date(2026, 10, 3), 0, 180);
+        expect(l[0]).toEqual({ deger: '2026-11-03', ad: '03.11.2026 · Bugün' });
+        expect(l).toHaveLength(181);
+        expect(l.every(x => x.deger >= '2026-11-03')).toBe(true);
     });
 });
