@@ -34,7 +34,9 @@ export type BildirimHedefi =
     | { ekran: 'EkMesaiDavet', parametre: { mesaiTalebiId?: string } }
     | { ekran: 'EkMesaiDavetYonetim', parametre: { mesaiTalebiId: string } }
     | { ekran: 'MesaiPlanlama', parametre: { sekme?: 'onay' } }
-    | { ekran: 'MesaiTalebiYeni', parametre: { mesaiTalebiId: string } };
+    | { ekran: 'MesaiTalebiYeni', parametre: { mesaiTalebiId: string } }
+    | { ekran: 'Vardiyam', parametre: {} }
+    | { ekran: 'IzinOnaylari', parametre: {} };
 
 /** Bildirim verisinden acilacak ekran; iptal ve mesai hatirlatmada ekran acilmaz (uygulama acilir). */
 export const bildirimHedefi = (veri: Record<string, unknown> | undefined | null): BildirimHedefi | undefined => {
@@ -52,6 +54,13 @@ export const bildirimHedefi = (veri: Record<string, unknown> | undefined | null)
             return { ekran: 'MesaiPlanlama', parametre: {} };
         case 'ek_mesai_revize':
             return talepId ? { ekran: 'MesaiTalebiYeni', parametre: { mesaiTalebiId: talepId } } : { ekran: 'MesaiPlanlama', parametre: {} };
+        // IK Faz 3 (03.11.2026): izin / gun degisimi istegi onaylayiciya, karar istegin sahibine.
+        case 'izin_istek':
+        case 'takas_istek':
+            return { ekran: 'IzinOnaylari', parametre: {} };
+        case 'izin_karar':
+        case 'takas_karar':
+            return { ekran: 'Vardiyam', parametre: {} };
         default:
             return undefined;
     }

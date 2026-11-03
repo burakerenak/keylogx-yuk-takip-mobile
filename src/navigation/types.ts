@@ -28,6 +28,14 @@ export type AppStackParamList = {
     EkMesaiDavet: { mesaiTalebiId?: string } | undefined,
     /** Davetleri yonet: durumlar, yerine kisi secimi (ret / yanit yok bildiriminden acilir). */
     EkMesaiDavetYonetim: { mesaiTalebiId: string },
+    /** IK Faz 3: Vardiyam ve izinlerim (14 gun vardiya, yillik izin bakiyesi, isteklerim). */
+    Vardiyam: undefined,
+    /** IK Faz 3: Izin Iste formu. */
+    IzinIste: undefined,
+    /** IK Faz 3: Gun Degisimi Iste formu. */
+    GunDegisimiIste: undefined,
+    /** IK Faz 3: onaylayicinin bekleyen izin ve gun degisimi istekleri. */
+    IzinOnaylari: undefined,
     /** 4.4: Profilim > Mesai Gecmisim (son 12 ay). */
     MesaiGecmisi: undefined,
     /** 4.4: Mesai Gecmisim > ay detayi (gun gun kayitlar). */

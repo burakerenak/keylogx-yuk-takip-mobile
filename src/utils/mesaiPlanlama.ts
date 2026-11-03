@@ -185,21 +185,37 @@ export const kendiliginden = (liste: SecimOgesi[], onceki: string | undefined): 
 
 // ---------------------------------------------------------------- Saat araligi
 
-/** "18:00-22:00" ya da "18:00–22:00" -> { baslangic: "18:00", bitis: "22:00" }; gecersizse null. */
+/**
+ * "18:00-22:00" ya da "18:00–22:00" -> { baslangic: "18:00", bitis: "22:00" }; gecersizse null.
+ * Gece yarisini gecen talep (IK Faz 3, 03.11.2026): sunucu bitisi "26:00" saklar ve "22:00–02:00 (+1)" yazar; ikisi de
+ * bitis "02:00" olarak cozulur (saat secicide ve kayitta 02:00; sunucu ertesi gun sayar).
+ */
 export const aralikCoz = (metin: string | null | undefined): { baslangic: string, bitis: string } | null => {
-    const m = (metin ?? '').match(/^\s*(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})\s*$/);
+    const m = (metin ?? '').match(/^\s*(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})\s*(\(\+1\))?\s*$/);
     if (!m) return null;
 
     const iki = (s: string) => s.padStart(2, '0');
+    const bitSaat = Number(m[3]);
+    if (Number(m[1]) > 23 || bitSaat > 47) return null;
 
-    return { baslangic: `${iki(m[1])}:${m[2]}`, bitis: `${iki(m[3])}:${m[4]}` };
+    return { baslangic: `${iki(m[1])}:${m[2]}`, bitis: `${iki(String(bitSaat % 24))}:${m[4]}` };
 };
 
-/** "18:00-22:00" -> "18:00 – 22:00" (ekranda). */
+/** Bitis baslangictan once ya da esitse talep ertesi gun biter. */
+export const ertesiGunBiter = (baslangic: string, bitis: string): boolean => bitis <= baslangic;
+
+/** "18:00-22:00" -> "18:00 – 22:00"; gece yarisini gecen "22:00-02:00" / "22:00–26:00" -> "22:00 – 02:00 (+1)" (ekranda). */
 export const aralikMetni = (metin: string): string => {
     const a = aralikCoz(metin);
 
-    return a ? `${a.baslangic} – ${a.bitis}` : metin;
+    return a ? `${a.baslangic} – ${a.bitis}${ertesiGunBiter(a.baslangic, a.bitis) ? ' (+1)' : ''}` : metin;
+};
+
+/** Talebin saat araligi (baslangic, sunucudaki bitis "26:00" olabilir) -> "22:00–02:00 (+1)". */
+export const talepAralikMetni = (baslangic: string, bitis: string): string => {
+    const a = aralikCoz(`${baslangic}-${bitis}`);
+
+    return a ? `${a.baslangic}–${a.bitis}${ertesiGunBiter(a.baslangic, a.bitis) ? ' (+1)' : ''}` : `${baslangic}–${bitis}`;
 };
 
 // ---------------------------------------------------------------- Talep doluluk / eksik

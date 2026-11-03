@@ -16,6 +16,10 @@ import MesaiPlanlamaScreen from '../screens/MesaiPlanlamaScreen';
 import MesaiTalebiYeniScreen from '../screens/MesaiTalebiYeniScreen';
 import EkMesaiDavetScreen from '../screens/EkMesaiDavetScreen';
 import EkMesaiDavetYonetimScreen from '../screens/EkMesaiDavetYonetimScreen';
+import VardiyamScreen from '../screens/VardiyamScreen';
+import IzinIsteScreen from '../screens/IzinIsteScreen';
+import GunDegisimiIsteScreen from '../screens/GunDegisimiIsteScreen';
+import IzinOnaylariScreen from '../screens/IzinOnaylariScreen';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
@@ -37,6 +41,10 @@ export const AppNavigator = () => {
             <Stack.Screen name="MesaiTalebiYeni" component={MesaiTalebiYeniScreen} />
             <Stack.Screen name="EkMesaiDavet" component={EkMesaiDavetScreen} />
             <Stack.Screen name="EkMesaiDavetYonetim" component={EkMesaiDavetYonetimScreen} />
+            <Stack.Screen name="Vardiyam" component={VardiyamScreen} />
+            <Stack.Screen name="IzinIste" component={IzinIsteScreen} />
+            <Stack.Screen name="GunDegisimiIste" component={GunDegisimiIsteScreen} />
+            <Stack.Screen name="IzinOnaylari" component={IzinOnaylariScreen} />
         </Stack.Navigator>
     );
 };
