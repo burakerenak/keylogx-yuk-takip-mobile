@@ -51,7 +51,7 @@ export interface BugunCalismaSaati {
 }
 
 /** 4.6: Durum.kartlar degerleri. Bilinmeyen deger gelirse yok sayilir. */
-export type MobilKart = 'Gorevlerim' | 'MesaiPlanlama';
+export type MobilKart = 'Gorevlerim' | 'MesaiPlanlama' | 'Vardiyam' | 'IzinOnay';
 
 export interface MesaiDurumResponse {
     /** Kullanici personele bagliysa dolu. */

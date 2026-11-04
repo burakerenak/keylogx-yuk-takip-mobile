@@ -10,10 +10,15 @@ export const login = async (
     return res.data.data; // 👈 burada type-safe
 };
 
+/**
+ * Bildirim adresi (FCM token) kaydi. #541: sunucu ayni adresi baska kullanicilardan siler; { token: '' } cagiranin adresini siler.
+ * sessiz: hata olursa uyari penceresi gosterilmez (arka planda yapilan kayit / silme).
+ */
 export const updateFirebaseToken = async (
-    body: UpdateFirebaseTokenRequest
+    body: UpdateFirebaseTokenRequest,
+    sessiz = false
 ): Promise<UpdateFirebaseTokenResponse> => {
-    const res = await api.post<ApiResponse<UpdateFirebaseTokenResponse>>('/User/UpdateFirebaseToken', body);
+    const res = await api.post<ApiResponse<UpdateFirebaseTokenResponse>>('/User/UpdateFirebaseToken', body, { sessiz });
 
     return res.data.data; // 👈 burada type-safe
 };

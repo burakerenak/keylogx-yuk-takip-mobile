@@ -13,6 +13,7 @@ import { BilgiSatiri, Dugme, EkranBaslik, Etiket, Kart, Yazi } from '../ui';
 import { getMesaiDurum, okut } from '../api/mesai';
 import { IsTipi, MesaiKaydiOzet, MesaiOkutResponse } from '../types/mesai.types';
 import { anlikKonum } from '../utils/konum';
+import { konumAcikMi, konumAyarlariniAc, oneGelince } from '../utils/cihaz';
 import { saatte, sureMetni } from '../utils/mesai';
 import { kullaniciTuru } from '../utils/kullanici';
 import { adlariBirlestir, anaSayfaKartlari, isTipiBuyuk, isTipiRengi, KART_ADLARI } from '../utils/mesaiPlanlama';
@@ -64,6 +65,8 @@ const tarihMetni = (tarih: string | null | undefined) => {
  * - 4.6 DEGISTI ("Yer / iş değişti"): farkli QR okutuldu; kapanan kaydin ozeti + yeni mesai.
  * - GIRIS / DEGISTI sonrasi Mesai/Durum sessizce okunur; gorev yetkisiyle acilan kartlar ("Görevlerim açıldı") gosterilir.
  * - Konum izni yoksa okutma yapilmaz. Kamera izni yoksa Ayarlar'a yonlendirilir.
+ * - #542 (04.11.2026) konum alinamadiysa: Android'de telefonun konumu kapaliysa uyarisiz konum ayarlari acilir ve
+ *   donunce ayni QR ile kendiliginden yeniden denenir; konum acik ama gelmediyse "Tekrar dene". iOS'ta "Ayarları Aç".
  * - Hata (gecersiz QR, uzak konum...) baglanti katmaninda uyari olarak gosterilir; tarama "Tekrar Okut" ile surer
  *   (ayni QR'in uyariyi art arda acmamasi icin otomatik yeniden tarama yapilmaz).
  */
@@ -81,6 +84,16 @@ export default function MesaiQrScreen() {
     /** Ayni anda tek okuma: kamera her karede bildirim gonderir. */
     const islemde = useRef(false);
     const ipucuZamani = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    /** #542: konum ayarlarindan donunce yapilacak yeniden deneme (iptal fonksiyonu). */
+    const bekleyenDeneme = useRef<(() => void) | undefined>(undefined);
+
+    const bekleyeniIptal = () => {
+        bekleyenDeneme.current?.();
+        bekleyenDeneme.current = undefined;
+    };
+
+    // Ekran kapanirsa bekleyen yeniden deneme temizlenir.
+    useEffect(() => () => bekleyeniIptal(), []);
 
     // ------------------------------------------------------------ Kamera izni
 
@@ -177,8 +190,36 @@ export default function MesaiQrScreen() {
         }
     };
 
-    const qrIsle = async (_qrMetni: string) => {
+    /**
+     * #542 Android: telefonun konumu kapali -> uyari gostermeden konum ayarlari acilir; uygulama one gelince
+     * ayni QR metniyle okutma kendiliginden yeniden denenir (tek seferlik dinleyici).
+     */
+    const konumuAcipTekrarDene = (_qrMetni: string) => {
+        bekleyeniIptal();
+        bekleyenDeneme.current = oneGelince(() => {
+            bekleyenDeneme.current = undefined;
+            qrIsle(_qrMetni, true);
+        });
+        konumAyarlariniAc();
+    };
+
+    /** _ayarlardanDonus: konum ayarlarindan donuldu; konum hala kapaliysa ayarlar yeniden kendiliginden acilmaz (dongu olmasin). */
+    const qrIsle = async (_qrMetni: string, _ayarlardanDonus = false) => {
         setAsama('konum');
+
+        // Android: konum kapaliysa konum denemesinin zaman asimini (~25 sn) beklemeden ayarlar hemen acilir.
+        if (Platform.OS === 'android' && await konumAcikMi() === false) {
+            setAsama('hata');
+            if (!_ayarlardanDonus) {
+                konumuAcipTekrarDene(_qrMetni);
+                return;
+            }
+            Alert.alert('Konum kapalı', 'Mesai okutmak için telefonunuzun konumunu açın.', [
+                { text: 'Vazgeç', style: 'cancel' },
+                { text: 'Konumu Aç', onPress: () => konumuAcipTekrarDene(_qrMetni) },
+            ]);
+            return;
+        }
 
         const konum = await anlikKonum();
 
@@ -192,8 +233,36 @@ export default function MesaiQrScreen() {
         }
 
         if (konum.durum === 'alinamadi') {
-            Alert.alert('Konum alınamadı', 'Telefonun konum servisinin açık olduğundan emin olup tekrar deneyin.');
             setAsama('hata');
+
+            if (Platform.OS === 'ios') {
+                // iOS Konum Servisleri sayfasini dogrudan acmaya izin vermez; servis kapaliysa sistem kendi penceresini de gosterir.
+                Alert.alert('Konum alınamadı', 'Telefonun konum servisi kapalı olabilir. Ayarlar > Gizlilik ve Güvenlik > Konum Servisleri\'nden açıp tekrar deneyin.', [
+                    { text: 'Vazgeç', style: 'cancel' },
+                    { text: 'Tekrar dene', onPress: () => qrIsle(_qrMetni) },
+                    { text: 'Ayarları Aç', onPress: () => Linking.openSettings().catch(() => undefined) },
+                ]);
+                return;
+            }
+
+            if (await konumAcikMi() === false) {
+                if (!_ayarlardanDonus) {
+                    konumuAcipTekrarDene(_qrMetni);
+                    return;
+                }
+
+                Alert.alert('Konum kapalı', 'Mesai okutmak için telefonunuzun konumunu açın.', [
+                    { text: 'Vazgeç', style: 'cancel' },
+                    { text: 'Konumu Aç', onPress: () => konumuAcipTekrarDene(_qrMetni) },
+                ]);
+                return;
+            }
+
+            // Konum servisi acik ama konum gelmedi (kapali alan, zaman asimi).
+            Alert.alert('Konum alınamadı', 'Telefonun konum servisinin açık olduğundan emin olup tekrar deneyin.', [
+                { text: 'Vazgeç', style: 'cancel' },
+                { text: 'Tekrar dene', onPress: () => qrIsle(_qrMetni) },
+            ]);
             return;
         }
 
@@ -224,6 +293,7 @@ export default function MesaiQrScreen() {
     });
 
     const tekrarOkut = () => {
+        bekleyeniIptal();
         setMod({ tur: 'kamera' });
         setAsama('tarama');
         islemde.current = false;

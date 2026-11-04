@@ -97,8 +97,8 @@ android {
         manifestPlaceholders = [appLabel: keylogxTest ? "Keylogx TEST" : "@string/app_name", haritaAnahtari: haritaAnahtari]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 16
-        versionName "4.11"
+        versionCode 18
+        versionName "4.12"
     }
     signingConfigs {
         debug {
@@ -131,6 +131,8 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    // #545: acilista Google Play uygulama ici guncelleme (IMMEDIATE akisi, yerel modul Cihaz).
+    implementation("com.google.android.play:app-update:2.1.0")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

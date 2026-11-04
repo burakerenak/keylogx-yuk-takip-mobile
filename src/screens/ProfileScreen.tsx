@@ -3,15 +3,17 @@ import { Alert, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { CalendarClock, ChevronRight, LockKeyhole, LogOut } from 'lucide-react-native';
+import { CalendarClock, CalendarDays, ChevronRight, LockKeyhole, LogOut } from 'lucide-react-native';
 import BottomMenu from '../components/BottomMenu';
-import { deleteUser } from '../services/userService';
+import { oturumuKapat } from '../services/oturum';
 import { useAuthStore } from '../store/authStore';
 import { theme } from '../theme/theme';
 import { AppStackParamList } from '../navigation/types';
 import { getMyProfile } from '../api/user';
 import { GetMyProfileResponse } from '../types/user.types';
-import { BilgiSatiri, Dugme, Kart, Yazi } from '../ui';
+import { BilgiSatiri, Dugme, Kart, SayiRozeti, Yazi } from '../ui';
+import { getIstekOzet } from '../api/istek';
+import { rozetMetni } from '../utils/istek';
 import { SURUM_METNI } from '../surum';
 import { kullaniciTuru } from '../utils/kullanici';
 
@@ -25,8 +27,9 @@ const basHarfler = (ad?: string | null) => (ad ?? '').split(' ').filter(x => x).
 const ProfileScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
     const user = useAuthStore((s) => s.user);
-    const signOut = useAuthStore((s) => s.signOut);
     const [profil, setProfil] = useState<GetMyProfileResponse | undefined>(undefined);
+    // IK Faz 3: personelin henuz gormedigi izin / gun degisimi kararlari (Vardiyam acilinca sifirlanir).
+    const [yeniKarar, setYeniKarar] = useState(0);
 
     useFocusEffect(useCallback(() => {
         (async () => {
@@ -36,16 +39,15 @@ const ProfileScreen = () => {
                 // Hata mesajini baglanti katmani gosterir; ad soyad oturum bilgisinden gosterilir.
             }
         })();
+        getIstekOzet().then(o => setYeniKarar(o?.yeniKarar ?? 0)).catch(() => setYeniKarar(0));
     }, []));
 
     const cikis = () => {
         Alert.alert('Çıkış yapılsın mı?', '', [
             { text: 'Vazgeç', style: 'cancel' },
             {
-                text: 'Çıkış Yap', style: 'destructive', onPress: async () => {
-                    await deleteUser();
-                    signOut();
-                }
+                // #541: once bildirim adresi sunucudan silinir (bu telefona baska kullanicinin bildirimi gelmesin).
+                text: 'Çıkış Yap', style: 'destructive', onPress: () => { oturumuKapat(); }
             },
         ]);
     };
@@ -89,6 +91,20 @@ const ProfileScreen = () => {
                                 <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('MesaiGecmisi')} style={s.satirDugme}>
                                     <CalendarClock size={22} color={c.teal} />
                                     <Yazi tur="govdeKalin" style={{ flex: 1, fontSize: 16 }}>Mesai Geçmişim</Yazi>
+                                    <ChevronRight size={20} color="#8A93A3" />
+                                </TouchableOpacity>
+                            )
+                            : null
+                    }
+
+                    {
+                        // IK Faz 3 (03.11.2026, Burak): Vardiyam ve izinlerim ana ekrandan buraya; gorulmemis karar sayisi rozetle.
+                        tur.personel
+                            ? (
+                                <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Vardiyam')} style={s.satirDugme}>
+                                    <CalendarDays size={22} color={c.teal} />
+                                    <Yazi tur="govdeKalin" style={{ flex: 1, fontSize: 16 }}>Vardiyam ve İzinlerim</Yazi>
+                                    <SayiRozeti metin={rozetMetni(yeniKarar)} renk={c.red} />
                                     <ChevronRight size={20} color="#8A93A3" />
                                 </TouchableOpacity>
                             )

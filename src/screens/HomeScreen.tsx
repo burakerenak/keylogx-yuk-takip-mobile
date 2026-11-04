@@ -3,7 +3,7 @@ import { Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { CalendarClock, Clock, QrCode, Truck } from 'lucide-react-native';
+import { CalendarCheck, CalendarClock, Clock, QrCode, Truck } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
 import { useMesaiKartStore } from '../store/mesaiKartStore';
 import { theme } from '../theme/theme';
@@ -14,7 +14,9 @@ import { MesaiDavetItem, MesaiDurumResponse } from '../types/mesai.types';
 import { bekleyeniAc } from '../services/bildirimYonlendirme';
 import { DAVET_BEKLIYOR } from '../utils/mesaiDavet';
 import BottomMenu from '../components/BottomMenu';
-import { Dugme, Yazi } from '../ui';
+import { Dugme, SayiRozeti, Yazi } from '../ui';
+import { getIstekOzet } from '../api/istek';
+import { rozetMetni } from '../utils/istek';
 import { seferDurumu } from '../utils/sefer';
 import { useKullaniciTuru } from '../utils/kullanici';
 import { saattenBeri, sayacMetni, sunucuZamaniCoz } from '../utils/mesai';
@@ -63,6 +65,13 @@ export default function HomeScreen() {
     // Ek mesai daveti (#515): bildirim kacirilirsa kart; uygulama bildirimle acildiysa bekleyen ekrana gidilir.
     const [davetler, setDavetler] = useState<MesaiDavetItem[]>([]);
     const bekleyenDavetler = davetler.filter(x => x.davetDurumu === DAVET_BEKLIYOR);
+
+    // IK Faz 3: bildirim kacarsa onaylayici bekleyen istek sayisini kartta gorur (odaklaninca yenilenir).
+    const [onayBekleyen, setOnayBekleyen] = useState(0);
+
+    useFocusEffect(useCallback(() => {
+        getIstekOzet().then(o => setOnayBekleyen(o?.onayBekleyen ?? 0)).catch(() => setOnayBekleyen(0));
+    }, []));
 
     useFocusEffect(useCallback(() => {
         const zaman = setTimeout(bekleyeniAc, 150);
@@ -297,6 +306,23 @@ export default function HomeScreen() {
                         )
                         : null
                 }
+
+                {
+                    // IK Faz 3 (03.11.2026): onaylayiciya Izin Onaylari + bekleyen sayisi (mesaiye bagli degil). Vardiyam Profilim'de
+                    // (Burak, 03.11): sunucu Vardiyam kartini gondermeye devam eder, ana ekranda yok sayilir.
+                    (mesai?.kartlar ?? []).includes('IzinOnay')
+                        ? (
+                            <TouchableOpacity activeOpacity={0.88} onPress={() => navigation.navigate('IzinOnaylari')} style={[s.kucukKart, { backgroundColor: c.white }]} accessibilityRole="button">
+                                <CalendarCheck size={26} color={c.blue} />
+                                <View style={{ flex: 1, gap: 2 }}>
+                                    <Text style={s.kucukBaslik}>İzin Onayları</Text>
+                                    <Text style={s.kucukAlt}>{onayBekleyen ? onayBekleyen + ' istek onayınızı bekliyor' : 'Bekleyen izin ve gün değişimi istekleri'}</Text>
+                                </View>
+                                <SayiRozeti metin={rozetMetni(onayBekleyen)} renk={c.red} />
+                            </TouchableOpacity>
+                        )
+                        : null
+                }
             </ScrollView>
 
             <BottomMenu activeIndex={0} />
@@ -321,6 +347,9 @@ const s = StyleSheet.create({
     sayacKutu: { alignItems: 'center', marginTop: 10, marginBottom: 6, paddingVertical: 14, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.12)' },
     sayac: { fontSize: 42, fontWeight: '700', color: c.white, letterSpacing: 1, fontVariant: ['tabular-nums'] },
     sayacEtiket: { fontSize: 13, fontWeight: '600', color: '#CDEDEA', marginTop: 2 },
+    kucukKart: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 18, padding: 18, borderWidth: 1, borderColor: c.border },
+    kucukBaslik: { fontSize: 17, fontWeight: '700', color: c.ink },
+    kucukAlt: { fontSize: 13, color: c.muted },
     davetKart: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, padding: 16, backgroundColor: '#C2410C' },
     davetBaslik: { fontSize: 16, fontWeight: '700', color: c.white },
     davetAlt: { fontSize: 13, color: '#FFEDD5' },

@@ -96,7 +96,7 @@ export default function MesaiTalebiYeniScreen() {
                     setMusteri(satir?.customerId);
                     setBolum(satir ? bolumAnahtari(satir) : undefined);
                     setPo(t.companyPoId);
-                    setAralik(secili ?? `${t.baslangic}-${t.bitis}`);
+                    setAralik(secili ?? (saatler ? `${saatler.baslangic}-${saatler.bitis}` : `${t.baslangic}-${t.bitis}`));
                     setKisiMetni(`${t.kisiSayisi}`);
                     setIsimler((t.ayrilanlar ?? []).map(x => x.personnelId));
                 }

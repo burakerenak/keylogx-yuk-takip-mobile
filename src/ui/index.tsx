@@ -152,6 +152,15 @@ export const SifreGirdisi = ({ style, ...props }: Omit<TextInputProps, 'secureTe
     );
 };
 
+// ---------------------------------------------------------------- Sayi rozeti
+
+/** Renkli sayi rozeti (IK Faz 3: bekleyen onay / gorulmemis karar). metin null ise hicbir sey cizmez. */
+export const SayiRozeti = ({ metin, renk = c.red }: { metin: string | null, renk?: string }) => metin === null ? null : (
+    <View style={[s.rozet, { backgroundColor: renk }]} accessibilityLabel={metin + ' yeni'}>
+        <Text style={s.rozetYazi}>{metin}</Text>
+    </View>
+);
+
 // ---------------------------------------------------------------- Ayrac
 
 export const Ayrac = ({ style }: { style?: StyleProp<ViewStyle> }) => <View style={[{ height: 1, backgroundColor: c.divider }, style]} />;
@@ -224,6 +233,8 @@ export const SecimKutusu = ({ etiket, secenekler, deger, onSec, yerTutucu = 'Se√
 };
 
 const s = StyleSheet.create({
+    rozet: { minWidth: 26, height: 26, borderRadius: 13, paddingHorizontal: 7, alignItems: 'center', justifyContent: 'center' },
+    rozetYazi: { fontSize: 13, fontWeight: '800', color: '#ffffff' },
     secim: { minHeight: 50, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: c.border, borderRadius: 12, paddingHorizontal: 14, backgroundColor: c.white },
     perde: { flex: 1, backgroundColor: 'rgba(16,24,38,0.45)' },
     sayfaAlt: { maxHeight: '70%', backgroundColor: c.white, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingBottom: 28 },

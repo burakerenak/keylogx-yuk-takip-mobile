@@ -11,7 +11,7 @@ import { getMesaiTalebiListe, getMesaiTalebiSecenekler, kisiDegistirMesaiTalebi,
 import { MesaiTalebiItem } from '../types/mesai.types';
 import { Dugme, EkranBaslik, Etiket, Kart, Yazi } from '../ui';
 import { davetDurumMetni, davetDurumTonu, ONAY_BEKLIYOR, ONAY_REVIZE, onayAkisinda } from '../utils/mesaiDavet';
-import { dolulukKutulari, eksikSayisi, gunEkle, paraMetni, trTarih, yerlesenSayisi } from '../utils/mesaiPlanlama';
+import { dolulukKutulari, eksikSayisi, gunEkle, paraMetni, trTarih, talepAralikMetni, yerlesenSayisi } from '../utils/mesaiPlanlama';
 
 const c = theme.colors;
 
@@ -290,7 +290,7 @@ const OnayKarti = ({ t, islemde, onOnayla, onRevize }: {
             </View>
 
             <View style={{ gap: 4 }}>
-                <Etiket metin={t.aralik || `${t.baslangic}–${t.bitis}`} ton="mavi" />
+                <Etiket metin={t.aralik || talepAralikMetni(t.baslangic, t.bitis)} ton="mavi" />
                 <Yazi tur="govde">{birlestir(t.customerName, t.divisionName)}</Yazi>
                 <Yazi tur="kucuk">{birlestir(t.poName, t.poNo)}</Yazi>
                 {t.aciklama ? <Yazi tur="kucuk">{t.aciklama}</Yazi> : null}
@@ -373,7 +373,7 @@ const TalepKarti = ({ t, tamam, islemde, onKisi, onSil, onDavet, onDuzenle }: {
             </View>
 
             <View style={{ gap: 4 }}>
-                <Etiket metin={t.aralik || `${t.baslangic}–${t.bitis}`} ton="mavi" />
+                <Etiket metin={t.aralik || talepAralikMetni(t.baslangic, t.bitis)} ton="mavi" />
                 <Yazi tur="govde">{birlestir(t.customerName, t.divisionName)}</Yazi>
                 <Yazi tur="kucuk">{birlestir(t.poName, t.poNo)}</Yazi>
             </View>
