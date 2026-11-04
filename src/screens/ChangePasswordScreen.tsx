@@ -6,8 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { theme } from '../theme/theme';
 import { AppStackParamList } from '../navigation/types';
 import { changeMyPassword } from '../api/user';
-import { deleteUser } from '../services/userService';
-import { useAuthStore } from '../store/authStore';
+import { oturumuKapat } from '../services/oturum';
 import { Dugme, EkranBaslik, SifreGirdisi, Yazi } from '../ui';
 
 const c = theme.colors;
@@ -21,7 +20,6 @@ const EN_AZ = 6;
  */
 export default function ChangePasswordScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-    const signOut = useAuthStore((s) => s.signOut);
 
     const [mevcut, setMevcut] = useState('');
     const [yeni, setYeni] = useState('');
@@ -41,10 +39,8 @@ export default function ChangePasswordScreen() {
             const mesaj = await changeMyPassword({ currentPassword: mevcut, newPassword: yeni });
 
             Alert.alert('Şifreniz değişti', mesaj, [{
-                text: 'Giriş ekranına git', onPress: async () => {
-                    await deleteUser();
-                    signOut();
-                }
+                // #541: bildirim adresi silinir (sunucu oturumu dusurduyse istek sessizce gecer), sonra cikis.
+                text: 'Giriş ekranına git', onPress: () => { oturumuKapat(); }
             }], { cancelable: false });
         } catch {
             // Hata mesajini (ör. "Mevcut şifreniz yanlış.") baglanti katmani gosterir.

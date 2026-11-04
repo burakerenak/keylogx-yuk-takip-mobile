@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { CalendarClock, CalendarDays, ChevronRight, LockKeyhole, LogOut } from 'lucide-react-native';
 import BottomMenu from '../components/BottomMenu';
-import { deleteUser } from '../services/userService';
+import { oturumuKapat } from '../services/oturum';
 import { useAuthStore } from '../store/authStore';
 import { theme } from '../theme/theme';
 import { AppStackParamList } from '../navigation/types';
@@ -27,7 +27,6 @@ const basHarfler = (ad?: string | null) => (ad ?? '').split(' ').filter(x => x).
 const ProfileScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
     const user = useAuthStore((s) => s.user);
-    const signOut = useAuthStore((s) => s.signOut);
     const [profil, setProfil] = useState<GetMyProfileResponse | undefined>(undefined);
     // IK Faz 3: personelin henuz gormedigi izin / gun degisimi kararlari (Vardiyam acilinca sifirlanir).
     const [yeniKarar, setYeniKarar] = useState(0);
@@ -47,10 +46,8 @@ const ProfileScreen = () => {
         Alert.alert('Çıkış yapılsın mı?', '', [
             { text: 'Vazgeç', style: 'cancel' },
             {
-                text: 'Çıkış Yap', style: 'destructive', onPress: async () => {
-                    await deleteUser();
-                    signOut();
-                }
+                // #541: once bildirim adresi sunucudan silinir (bu telefona baska kullanicinin bildirimi gelmesin).
+                text: 'Çıkış Yap', style: 'destructive', onPress: () => { oturumuKapat(); }
             },
         ]);
     };

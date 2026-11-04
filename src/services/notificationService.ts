@@ -1,6 +1,7 @@
 import { getMessaging } from "@react-native-firebase/messaging";
 import { Platform } from "react-native";
 import {
+    PermissionStatus,
     RESULTS,
     checkNotifications,
     requestNotifications,
@@ -12,6 +13,14 @@ class NotificationService {
     }
 
     async requestPermission(): Promise<boolean> {
+        return (await this.izinIste()) === RESULTS.GRANTED;
+    }
+
+    /**
+     * Bildirim izni: istenebiliyorsa (denied) sistem penceresi acilir ve son durum doner.
+     * #542 Izinler ekrani kalici reddi (blocked) ayirt etmek icin durumu kullanir.
+     */
+    async izinIste(): Promise<PermissionStatus> {
         try {
             if (Platform.OS === 'ios') {
                 const { status } = await checkNotifications();
@@ -23,10 +32,10 @@ class NotificationService {
                         'sound',
                     ]);
 
-                    return newStatus === RESULTS.GRANTED;
+                    return newStatus;
                 }
 
-                return status === RESULTS.GRANTED;
+                return status;
             }
 
             // Android 13+ (API 33) bildirim icin calisma zamani izni ister; istenmezse bildirimler hic gorunmez (#505).
@@ -35,12 +44,12 @@ class NotificationService {
 
             if (status === RESULTS.DENIED) {
                 const { status: newStatus } = await requestNotifications(['alert', 'sound']);
-                return newStatus === RESULTS.GRANTED;
+                return newStatus;
             }
 
-            return status === RESULTS.GRANTED;
-        } catch (error) {
-            return false;
+            return status;
+        } catch {
+            return RESULTS.UNAVAILABLE;
         }
     }
 

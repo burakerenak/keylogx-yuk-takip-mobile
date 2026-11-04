@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from '../screens/HomeScreen';
 import TasksScreen from '../screens/TasksScreen';
@@ -20,10 +20,15 @@ import VardiyamScreen from '../screens/VardiyamScreen';
 import IzinIsteScreen from '../screens/IzinIsteScreen';
 import GunDegisimiIsteScreen from '../screens/GunDegisimiIsteScreen';
 import IzinOnaylariScreen from '../screens/IzinOnaylariScreen';
+import IzinlerScreen from '../screens/IzinlerScreen';
+import { eksikIzinVarsaAc } from '../services/izinDenetimi';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
 export const AppNavigator = () => {
+    // #542: bu yigin oturum acilinca kurulur (giris ya da kayitli kullaniciyla acilis): eksik izin varsa Izinler ekrani.
+    useEffect(() => { eksikIzinVarsaAc(); }, []);
+
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Home" component={HomeScreen} />
@@ -45,6 +50,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="IzinIste" component={IzinIsteScreen} />
             <Stack.Screen name="GunDegisimiIste" component={GunDegisimiIsteScreen} />
             <Stack.Screen name="IzinOnaylari" component={IzinOnaylariScreen} />
+            <Stack.Screen name="Izinler" component={IzinlerScreen} />
         </Stack.Navigator>
     );
 };

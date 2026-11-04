@@ -7,7 +7,8 @@ import { Alert, Platform, StatusBar } from 'react-native';
 import { getUser } from './src/services/userService';
 import LoadingOverlay from './src/components/LoadingOverlay';
 import notificationService from './src/services/notificationService';
-import { updateFirebaseToken } from './src/api/user';
+import { bildirimAdresiniKaydet } from './src/services/oturum';
+import GuncellemePenceresi from './src/components/GuncellemePenceresi';
 import Toast from 'react-native-toast-message';
 import { yerelBildirimGoster } from './src/services/yerelBildirim';
 import { bekleyeniAc, bildirimAc } from './src/services/bildirimYonlendirme';
@@ -28,23 +29,26 @@ export default function App() {
             const user = await getUser();
 
             if (user) {
+                // "Beni hatirla": kayitli kullaniciyla otomatik oturum. Bildirim adresi bu kullaniciya yeniden kaydedilir
+                // (#541; cikista silinmis olabilir). Sessiz ve beklemeden: acilisi geciktirmez.
                 signIn(user);
-
-                try {
-                    const token = await notificationService.getToken();
-
-                    if (token)
-                        await updateFirebaseToken({ token: token });
-                }
-                catch {
-
-                }
+                bildirimAdresiniKaydet();
             }
 
             setHydrated(true);
         };
 
         init();
+    }, []);
+
+    // Yenilenen bildirim adresi giris yapmis kullaniciya kaydedilir (#541); oturum yoksa bir sonraki giriste kaydedilir.
+    useEffect(() => {
+        const unsubscribe = getMessaging().onTokenRefresh(token => {
+            if (useAuthStore.getState().user)
+                bildirimAdresiniKaydet(token);
+        });
+
+        return unsubscribe;
     }, []);
 
     useEffect(() => {
@@ -96,6 +100,9 @@ export default function App() {
                 </NavigationContainer>
 
                 <LoadingOverlay />
+
+                {/* #545: acilista guncelleme kontrolu; gezinmenin ustunde, giris ekraninda da gorunur. */}
+                <GuncellemePenceresi />
             </SafeAreaProvider>
         </GestureHandlerRootView>
     );

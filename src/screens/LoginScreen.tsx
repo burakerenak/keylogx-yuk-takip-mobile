@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Image, Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
-import { login, updateFirebaseToken } from '../api/user';
+import { login } from '../api/user';
 import AuthLayout from '../layouts/AuthLayout';
 import { theme } from '../theme/theme';
 import { deleteUser, saveUser } from '../services/userService';
-import notificationService from '../services/notificationService';
+import { bildirimAdresiniKaydet } from '../services/oturum';
 import { Dugme, SifreGirdisi } from '../ui';
 import { SURUM_METNI } from '../surum';
 
@@ -42,14 +42,8 @@ export default function LoginScreen() {
 
             signIn(loginResponse);
 
-            try {
-                const token = await notificationService.getToken();
-
-                if (token)
-                    await updateFirebaseToken({ token: token });
-            } catch {
-                // Bildirim anahtari kaydedilemezse giris yine de surer.
-            }
+            // Bildirim adresi bu kullaniciya kaydedilir (#541: sunucu ayni adresi onceki kullanicidan siler); sessiz.
+            await bildirimAdresiniKaydet();
         } catch {
             // Hata mesajini baglanti katmani gosterir.
         } finally {

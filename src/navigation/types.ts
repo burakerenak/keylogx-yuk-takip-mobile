@@ -45,6 +45,8 @@ export type AppStackParamList = {
         donemAdi: string
     },
     ChangePassword: undefined,
+    /** #542: eksik izinler (konum, konum servisi, bildirim, kamera); oturum acilinca eksik varsa kendiliginden acilir. */
+    Izinler: undefined,
     UpdateProduct: {
         ambar: GetAmbarByIdResponse
         ambarProduct: GetAmbarByIdResponseAmbarProduct
