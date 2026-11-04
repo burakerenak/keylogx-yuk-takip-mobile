@@ -207,6 +207,20 @@ export default function MesaiQrScreen() {
     const qrIsle = async (_qrMetni: string, _ayarlardanDonus = false) => {
         setAsama('konum');
 
+        // Android: konum kapaliysa konum denemesinin zaman asimini (~25 sn) beklemeden ayarlar hemen acilir.
+        if (Platform.OS === 'android' && await konumAcikMi() === false) {
+            setAsama('hata');
+            if (!_ayarlardanDonus) {
+                konumuAcipTekrarDene(_qrMetni);
+                return;
+            }
+            Alert.alert('Konum kapalı', 'Mesai okutmak için telefonunuzun konumunu açın.', [
+                { text: 'Vazgeç', style: 'cancel' },
+                { text: 'Konumu Aç', onPress: () => konumuAcipTekrarDene(_qrMetni) },
+            ]);
+            return;
+        }
+
         const konum = await anlikKonum();
 
         if (konum.durum === 'izinYok') {
