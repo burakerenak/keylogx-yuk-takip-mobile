@@ -127,6 +127,8 @@ export interface GetAmbarVoyageByIdResponseAmbar {
     orderStatusId: string
     orderStatusName: string
     isSendGib?: boolean
+    /** Müşterisi siparişin kendi firması: e-irsaliye düzenlenmez, GİB düğmesi ve hatırlatma yok (4.13, 10.11.2026). */
+    eIrsaliyeGerekmez?: boolean
     loadDate?: string
     loadEndDate?: string
     deliveryDate?: string
