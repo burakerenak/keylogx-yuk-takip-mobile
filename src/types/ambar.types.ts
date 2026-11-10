@@ -146,6 +146,8 @@ export type GetAmbarByIdRequest = {
 
 export type GetAmbarByIdResponse = {
     ambarId: string
+    /** Müşterisi siparişin kendi firması: bu cariye irsaliye kesilmez, taslak gönderilmez (4.13). */
+    eIrsaliyeGerekmez?: boolean
     companyId: string
     refNo: string
     customerId: any

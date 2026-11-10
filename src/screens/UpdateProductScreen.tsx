@@ -78,6 +78,12 @@ const UpdateProductScreen = () => {
 
         var updateAmbarProductResponse = await updateAmbarProduct(request);
 
+        // 4.13: musterisi siparisin kendi firmasi olan cariye irsaliye kesilmez; taslak gonderilmez.
+        if (ambar?.eIrsaliyeGerekmez) {
+            Alert.alert("Başarılı", "Bilgiler kaydedildi. Bu cariye irsaliye kesilmediği için e-irsaliye taslağı oluşturulmadı.");
+            return;
+        }
+
         var saveAsDraftIrsaliyeResponse = await saveAsDraftIrsaliye({ ambarId: ambar?.ambarId, sendToGib: false });
 
         if (saveAsDraftIrsaliyeResponse.isSucceded) {
