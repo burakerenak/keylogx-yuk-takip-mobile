@@ -145,8 +145,14 @@ export default function OrderScreen() {
             return;
         }
 
+        // 4.13: kendi firma siparisinde (e-irsaliye gerekmez) GIB hatirlatmasi cikmaz. Yenilemeden once okunur.
+        const irsaliyeGerekmez = !!data?.ambars?.find(x => x.ambarId === _ambarId)?.eIrsaliyeGerekmez;
+
         setKanitEkrani(undefined);
         onGetAmbarVoyageById(_ambarVoyageId);
+
+        if (irsaliyeGerekmez)
+            return;
 
         // Surucu e-irsaliyeyi GIB'e gonderemez; gonderim web ekranindan yapiliyor.
         // Yine de hatirlatma cikar, ayrica operasyon listesinde isaret gorunur.
@@ -298,7 +304,8 @@ export default function OrderScreen() {
                                         {surer && item.loadDate && !item.loadEndDate && <Dugme tur="mavi" metin="Yükleme Yapıldı" onPress={() => onAmbarSetLoadEndDate(data.ambarVoyageId, item.ambarId)} />}
                                         {surer && item.loadEndDate && !item.deliveryDate && <Dugme tur="turkuaz" metin="Boşaltma Noktasına Varıldı" onPress={() => onAmbarSetDeliveryDate(data.ambarVoyageId, item.ambarId)} />}
                                         {surer && item.deliveryDate && !item.deliveryEndDate && <Dugme tur="turkuaz" metin="Teslim Edildi" onPress={() => onDeliver(data.ambarVoyageId, item.ambarId)} />}
-                                        {!(item.isSendGib === true) && <Dugme kucuk tur="mor" metin="GİB'e Gönder" onPress={() => preSaveAsDraftIrsaliye(item.ambarId, data.ambarVoyageId)} />}
+                                        {/* 4.13: kendi firma siparisinde e-irsaliye yok, GIB dugmesi gosterilmez. */}
+                                        {!(item.isSendGib === true) && !item.eIrsaliyeGerekmez && <Dugme kucuk tur="mor" metin="GİB'e Gönder" onPress={() => preSaveAsDraftIrsaliye(item.ambarId, data.ambarVoyageId)} />}
                                     </View>
                                 </Kart>
                             );
