@@ -21,12 +21,25 @@ class YerelBildirimModule(private val reactContext: ReactApplicationContext) : R
 
     companion object {
         const val KANAL = "mesai_hatirlatma"
+        /** 4.14 (#614/#615): firma ici mesaj bildirimleri (sunucu Android channel_id "mesajlar" gonderir). */
+        const val MESAJ_KANALI = "mesajlar"
         private var sayac = 1000
 
         /** Kanal uygulama acilisinda bir kez olusturulur; arka planda gelen FCM bildirimi de bu kanalla sesli gelir. */
         fun kanalOlustur(context: Context) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
             val yonetici = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            if (yonetici.getNotificationChannel(MESAJ_KANALI) == null) {
+                val mesaj = NotificationChannel(MESAJ_KANALI, "Mesajlar", NotificationManager.IMPORTANCE_HIGH).apply {
+                    description = "Ofisten ve gruplardan gelen mesajlar"
+                    enableVibration(true)
+                    setSound(
+                        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+                        AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).build()
+                    )
+                }
+                yonetici.createNotificationChannel(mesaj)
+            }
             if (yonetici.getNotificationChannel(KANAL) != null) return
             val kanal = NotificationChannel(KANAL, "Mesai Hatırlatma", NotificationManager.IMPORTANCE_HIGH).apply {
                 description = "Mesai başlatma / kapatma hatırlatmaları ve yük bildirimleri"

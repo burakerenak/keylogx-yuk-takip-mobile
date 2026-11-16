@@ -32,6 +32,8 @@ export interface LoginResponseAuthorizedMenu {
 
 export type UpdateFirebaseTokenRequest = {
     token: string
+    /** 4.14 (#614): MOBILE = Yuk Takip; sunucu adresi bu uygulamaya ayrica kaydeder (Arac Takip ayni alani ezmesin). */
+    application?: string
 };
 
 export type UpdateFirebaseTokenResponse = {

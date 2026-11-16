@@ -45,6 +45,12 @@ export type AppStackParamList = {
         donemAdi: string
     },
     ChangePassword: undefined,
+    /** 4.14 (#615): firma ici mesajlasma sohbet listesi. */
+    Mesajlar: undefined,
+    /** 4.14: sohbet (bildirimden de konusmaId ile acilir). */
+    Sohbet: { konusmaId: string, ad?: string },
+    /** 4.14: yeni birebir sohbet icin kisi secimi. */
+    YeniSohbet: undefined,
     /** #542: eksik izinler (konum, konum servisi, bildirim, kamera); oturum acilinca eksik varsa kendiliginden acilir. */
     Izinler: undefined,
     UpdateProduct: {

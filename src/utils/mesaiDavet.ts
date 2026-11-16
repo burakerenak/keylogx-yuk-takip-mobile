@@ -36,7 +36,9 @@ export type BildirimHedefi =
     | { ekran: 'MesaiPlanlama', parametre: { sekme?: 'onay' } }
     | { ekran: 'MesaiTalebiYeni', parametre: { mesaiTalebiId: string } }
     | { ekran: 'Vardiyam', parametre: {} }
-    | { ekran: 'IzinOnaylari', parametre: {} };
+    | { ekran: 'IzinOnaylari', parametre: {} }
+    | { ekran: 'Sohbet', parametre: { konusmaId: string } }
+    | { ekran: 'Mesajlar', parametre: {} };
 
 /** Bildirim verisinden acilacak ekran; iptal ve mesai hatirlatmada ekran acilmaz (uygulama acilir). */
 export const bildirimHedefi = (veri: Record<string, unknown> | undefined | null): BildirimHedefi | undefined => {
@@ -61,6 +63,9 @@ export const bildirimHedefi = (veri: Record<string, unknown> | undefined | null)
         case 'izin_karar':
         case 'takas_karar':
             return { ekran: 'Vardiyam', parametre: {} };
+        // 4.14 (#615): yeni mesaj bildirimi sohbeti acar.
+        case 'mesaj':
+            return typeof veri?.konusmaId === 'string' && veri.konusmaId ? { ekran: 'Sohbet', parametre: { konusmaId: veri.konusmaId } } : { ekran: 'Mesajlar', parametre: {} };
         default:
             return undefined;
     }

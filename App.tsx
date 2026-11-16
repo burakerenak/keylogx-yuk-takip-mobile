@@ -16,6 +16,7 @@ import { bildirimHedefi } from './src/utils/mesaiDavet';
 import { navigationRef } from './src/navigation/navigationRef';
 import { getMessaging } from '@react-native-firebase/messaging';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useMesajStore } from './src/store/mesajStore';
 import { theme } from './src/theme/theme';
 
 export default function App() {
@@ -54,6 +55,13 @@ export default function App() {
     useEffect(() => {
         const unsubscribe = getMessaging().onMessage(async remoteMessage => {
             if (remoteMessage && remoteMessage.notification && remoteMessage.notification.body && remoteMessage.notification.title) {
+                // 4.14 (#615): mesaj bildirimi uygulama acikken: o sohbet aciksa gosterilmez; degilse dokununca sohbeti acan kisa uyari.
+                if (remoteMessage.data?.tur === 'mesaj') {
+                    if (useMesajStore.getState().acikKonusmaId === remoteMessage.data?.konusmaId)
+                        return;
+                    Toast.show({ type: 'info', text1: remoteMessage.notification.title, text2: remoteMessage.notification.body, onPress: () => { Toast.hide(); bildirimAc(remoteMessage.data); } });
+                    return;
+                }
                 // Uygulama acikken: Android bildirim alanina sesli bildirim (#505); iOS banner + sesi sistem gosterir (firebase.json).
                 yerelBildirimGoster(remoteMessage.notification.title, remoteMessage.notification.body);
                 // Ek mesai daveti / ret: yerel bildirim veri tasimaz, uygulama acikken dogrudan sorulur (#515).

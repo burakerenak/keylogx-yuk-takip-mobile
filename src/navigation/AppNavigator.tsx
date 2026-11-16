@@ -22,12 +22,18 @@ import GunDegisimiIsteScreen from '../screens/GunDegisimiIsteScreen';
 import IzinOnaylariScreen from '../screens/IzinOnaylariScreen';
 import IzinlerScreen from '../screens/IzinlerScreen';
 import { eksikIzinVarsaAc } from '../services/izinDenetimi';
+import MesajlarScreen from '../screens/MesajlarScreen';
+import SohbetScreen from '../screens/SohbetScreen';
+import YeniSohbetScreen from '../screens/YeniSohbetScreen';
+import { mesajlasmayiBaslat, mesajlasmayiDurdur } from '../services/mesajYoneticisi';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
 export const AppNavigator = () => {
     // #542: bu yigin oturum acilinca kurulur (giris ya da kayitli kullaniciyla acilis): eksik izin varsa Izinler ekrani.
     useEffect(() => { eksikIzinVarsaAc(); }, []);
+    // 4.14 (#615): mesajlasma oturum boyunca (yetki varsa anlik baglanti + rozet); cikista kapanir.
+    useEffect(() => { mesajlasmayiBaslat(); return () => mesajlasmayiDurdur(); }, []);
 
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -51,6 +57,9 @@ export const AppNavigator = () => {
             <Stack.Screen name="GunDegisimiIste" component={GunDegisimiIsteScreen} />
             <Stack.Screen name="IzinOnaylari" component={IzinOnaylariScreen} />
             <Stack.Screen name="Izinler" component={IzinlerScreen} />
+            <Stack.Screen name="Mesajlar" component={MesajlarScreen} />
+            <Stack.Screen name="Sohbet" component={SohbetScreen} />
+            <Stack.Screen name="YeniSohbet" component={YeniSohbetScreen} />
         </Stack.Navigator>
     );
 };

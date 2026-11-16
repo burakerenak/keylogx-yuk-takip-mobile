@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@microsoft/signalr": "8.0.7",
     "@react-native-community/geolocation": "^3.4.0",
     "@react-native-firebase/app": "^26.1.0",
     "@react-native-firebase/messaging": "^26.1.0",
