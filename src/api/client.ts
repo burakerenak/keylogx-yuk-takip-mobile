@@ -8,6 +8,8 @@ declare module 'axios' {
     interface AxiosRequestConfig {
         /** true: hata olursa uyari penceresi gosterilmez (arka planda yenilenen ozetler icin). */
         sessiz?: boolean;
+        /** true: yukleniyor perdesi acilmaz (sohbet gibi arka planda yenilenen istekler, 4.14). */
+        arkaPlan?: boolean;
     }
 }
 
@@ -17,7 +19,8 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-    useLoadingStore.getState().show();
+    if (!config.arkaPlan)
+        useLoadingStore.getState().show();
 
     const token = useAuthStore.getState().user?.token;
     const companyId = useAuthStore.getState().user?.companyId;
@@ -31,7 +34,8 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use((response) => {
-    useLoadingStore.getState().hide();
+    if (!response.config?.arkaPlan)
+        useLoadingStore.getState().hide();
 
     const res = response.data;
 
@@ -46,7 +50,8 @@ api.interceptors.response.use((response) => {
 
     return response;
 }, (error) => {
-    useLoadingStore.getState().hide();
+    if (!error?.config?.arkaPlan)
+        useLoadingStore.getState().hide();
 
     // HTTP ERROR HANDLING
     const message = error?.response?.data?.message || 'Sunucu hatası oluştu';

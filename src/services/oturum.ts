@@ -17,7 +17,7 @@ export const bildirimAdresiniKaydet = async (_token?: string | null) => {
         const token = _token ?? await notificationService.getToken();
 
         if (token)
-            await updateFirebaseToken({ token }, true);
+            await updateFirebaseToken({ token, application: 'MOBILE' }, true);
     } catch {
         // Bildirim adresi kaydedilemezse uygulama yine de surer.
     }
@@ -29,7 +29,7 @@ export const bildirimAdresiniKaydet = async (_token?: string | null) => {
  * oturum anahtari zaten gecersizdir.
  */
 export const oturumuKapat = () => oturumuKapatAkisi({
-    adresiSil: () => updateFirebaseToken({ token: '' }, true),
+    adresiSil: () => updateFirebaseToken({ token: '', application: 'MOBILE' }, true),
     kullaniciyiSil: deleteUser,
     cikis: () => {
         izinErtelemesiniSifirla();
