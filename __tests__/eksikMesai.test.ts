@@ -1,9 +1,9 @@
-import { EKSIK_MESAI_METNI, eksikMesaiHedefi, eksikSayisi, eksikUyarisi, gunleriSuz } from '../src/utils/eksikMesai';
+import { EKSIK_MESAI_METNI, EKSIK_MESAI_SURUCU_METNI, eksikMesaiHedefi, eksikSayisi, eksikUyarisi, gunleriSuz } from '../src/utils/eksikMesai';
 import { bildirimHedefi } from '../src/utils/mesaiDavet';
 import { MesaiGecmisGun, MesaiKaydiOzet } from '../src/types/mesai.types';
 
-const kayit = (id: string, durum: 1 | 2 | 3, uyari?: string | null) =>
-    ({ mesaiKaydiId: id, durum, uyari, durumAdi: '', tur: 1, noktaAdi: 'Depo', tarih: '2026-11-20', girisSaati: '08:00', girisZamani: '', cikisSaati: null, normalDk: 0, ekDk: 0, sureDk: 0 } as unknown as MesaiKaydiOzet);
+const kayit = (id: string, durum: 1 | 2 | 3, uyari?: string | null, tur: 1 | 2 = 1) =>
+    ({ mesaiKaydiId: id, durum, uyari, durumAdi: '', tur, noktaAdi: 'Depo', tarih: '2026-11-20', girisSaati: '08:00', girisZamani: '', cikisSaati: null, normalDk: 0, ekDk: 0, sureDk: 0 } as unknown as MesaiKaydiOzet);
 
 const gunler: MesaiGecmisGun[] = [
     { tarih: '2026-11-21', gunAdi: 'cumartesi', sureDk: 540, normalDk: 540, ekDk: 0, kayitlar: [kayit('a', 2)] },
@@ -29,9 +29,11 @@ describe('Eksik Mesai suzgeci', () => {
 });
 
 describe('Eksik Mesai yazili uyari', () => {
-    it('sunucu metni once, eski sunucuda eksik kayitta sabit metin, digerlerinde yok', () => {
+    it('sunucu metni once, eski sunucuda eksik kayitta ture gore sabit metin (personel / surucu), digerlerinde yok', () => {
         expect(eksikUyarisi(kayit('x', 3, 'Sunucu metni'))).toBe('Sunucu metni');
         expect(eksikUyarisi(kayit('x', 3))).toBe(EKSIK_MESAI_METNI);
+        expect(eksikUyarisi(kayit('x', 3, null, 2))).toBe(EKSIK_MESAI_SURUCU_METNI);
+        expect(EKSIK_MESAI_SURUCU_METNI).toBe('Mesai kapaması yapılmadığı için bu günün mesaisi hesaba katılmayacak.');
         expect(EKSIK_MESAI_METNI).toBe('Mesai kapaması yapılmadığı için mesai ücreti alamayacaksınız.');
         expect(eksikUyarisi(kayit('x', 2))).toBeNull();
         expect(eksikUyarisi(kayit('x', 1))).toBeNull();

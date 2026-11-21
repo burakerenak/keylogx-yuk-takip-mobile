@@ -6,15 +6,18 @@ import { MesaiGecmisGun, MesaiKaydiOzet } from '../types/mesai.types';
  * Mesai Gecmisim'in o ayi yalniz eksik kayitlarla acilir. Eksik kayit gun / ay toplamlarina katilmaz (sunucu hesaplar).
  */
 export const EKSIK_MESAI_DURUMU = 3;
+/** Personel kaydi (tur 1) metni. */
 export const EKSIK_MESAI_METNI = 'Mesai kapaması yapılmadığı için mesai ücreti alamayacaksınız.';
+/** Surucu kaydi (tur 2) metni: surucu kaydinda ucret yok, gunun mesaisi hesaba katilmaz. */
+export const EKSIK_MESAI_SURUCU_METNI = 'Mesai kapaması yapılmadığı için bu günün mesaisi hesaba katılmayacak.';
 
 const AYLAR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
 export const eksikMesaiMi = (k: Pick<MesaiKaydiOzet, 'durum'>): boolean => k.durum === EKSIK_MESAI_DURUMU;
 
-/** Kayitta gosterilecek yazili uyari: sunucunun metni, eski sunucuda eksik kayitta sabit metin; eksik degilse null. */
-export const eksikUyarisi = (k: Pick<MesaiKaydiOzet, 'durum' | 'uyari'>): string | null =>
-    k.uyari ? k.uyari : eksikMesaiMi(k) ? EKSIK_MESAI_METNI : null;
+/** Kayitta gosterilecek yazili uyari: sunucunun metni; eski sunucuda eksik kayitta ture gore sabit metin (surucu / personel); eksik degilse null. */
+export const eksikUyarisi = (k: Pick<MesaiKaydiOzet, 'durum' | 'uyari' | 'tur'>): string | null =>
+    k.uyari ? k.uyari : eksikMesaiMi(k) ? (k.tur === 2 ? EKSIK_MESAI_SURUCU_METNI : EKSIK_MESAI_METNI) : null;
 
 /** Gunlerdeki eksik kayit sayisi. */
 export const eksikSayisi = (gunler: MesaiGecmisGun[]): number =>

@@ -25,7 +25,7 @@ const saatAraligi = (k: MesaiKaydiOzet): string => {
 /**
  * Tek mesai kaydi satiri: nokta (personelde is tipi), saat araligi, sure, ek mesai, durum etiketi.
  * 4.6: kisinin kendi kaydinda ucret (personelUcret) geliyorsa ek mesai satirinin sagida TL.
- * 4.15 Eksik Mesai: eksik kayitta kirmizi yazili uyari ("Mesai kapaması yapılmadığı için mesai ücreti alamayacaksınız.").
+ * 4.15 Eksik Mesai: eksik kayitta kirmizi yazili uyari (personel: "...mesai ücreti alamayacaksınız.", sürücü: "...bu günün mesaisi hesaba katılmayacak.").
  */
 const KayitSatiri = ({ k }: { k: MesaiKaydiOzet }) => {
     const baslik = k.tur === 1 && k.isTipiAdi ? `${k.noktaAdi} · ${k.isTipiAdi}` : k.noktaAdi;
