@@ -1,3 +1,5 @@
+import { eksikMesaiHedefi } from './eksikMesai';
+
 /**
  * Ek mesai daveti (30.10.2026, #515). Yeni talepte (gecmis tarihli de, 02.11.2026) kisi sayisi kadar personel secilir; secilene davet bildirimi gider.
  * Kurallari sunucu da denetler; burasi ekrani ve bildirime tiklaninca acilacak yeri belirler.
@@ -38,7 +40,8 @@ export type BildirimHedefi =
     | { ekran: 'Vardiyam', parametre: {} }
     | { ekran: 'IzinOnaylari', parametre: {} }
     | { ekran: 'Sohbet', parametre: { konusmaId: string } }
-    | { ekran: 'Mesajlar', parametre: {} };
+    | { ekran: 'Mesajlar', parametre: {} }
+    | { ekran: 'MesaiGecmisiGun', parametre: { yil: number, ay: number, donemAdi: string, yalnizEksik?: boolean } };
 
 /** Bildirim verisinden acilacak ekran; iptal ve mesai hatirlatmada ekran acilmaz (uygulama acilir). */
 export const bildirimHedefi = (veri: Record<string, unknown> | undefined | null): BildirimHedefi | undefined => {
@@ -66,6 +69,9 @@ export const bildirimHedefi = (veri: Record<string, unknown> | undefined | null)
         // 4.14 (#615): yeni mesaj bildirimi sohbeti acar.
         case 'mesaj':
             return typeof veri?.konusmaId === 'string' && veri.konusmaId ? { ekran: 'Sohbet', parametre: { konusmaId: veri.konusmaId } } : { ekran: 'Mesajlar', parametre: {} };
+        // 4.15 Eksik Mesai (21.11.2026): Mesai Gecmisim'in o ayi, yalniz eksik kayitlar.
+        case 'eksik_mesai':
+            return eksikMesaiHedefi(veri);
         default:
             return undefined;
     }

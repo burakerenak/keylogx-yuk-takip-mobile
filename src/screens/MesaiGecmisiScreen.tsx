@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -20,6 +20,7 @@ const c = theme.colors;
  * yalniz kaydi olan aylar). Her ay: gun sayisi, toplam sure; personelde normal / ek mesai; eksik cikis sayisi.
  * Aya dokununca o ayin gunleri (MesaiGecmisiGun) acilir.
  * 4.6 (R11b): ay kartinda Alacak (ek mesai ucreti, TL) + donem rozeti ("Açık dönem"); eski sunucuda alanlar yok, gizli.
+ * 4.15 Eksik Mesai: ay toplamlari (gun, sure, alacak) eksik kayitlari saymaz (sunucu); kirmizi eksik etiketine dokununca ay yalniz eksiklerle acilir.
  */
 export default function MesaiGecmisiScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -91,7 +92,16 @@ export default function MesaiGecmisiScreen() {
                                             )
                                             : null
                                     }
-                                    {x.eksikCikis > 0 ? <Etiket metin={`${x.eksikCikis} eksik çıkış`} ton="kirmizi" /> : null}
+                                    {x.eksikCikis > 0 ? (
+                                        // 4.15: eksik etiketine dokununca ay yalniz eksik kayitlarla acilir.
+                                        <TouchableOpacity
+                                            onPress={() => navigation.navigate('MesaiGecmisiGun', { yil: x.yil, ay: x.ay, donemAdi: basHarfBuyuk(x.donemAdi), yalnizEksik: true })}
+                                            accessibilityRole="button"
+                                            style={{ alignSelf: 'flex-start' }}
+                                        >
+                                            <Etiket metin={`${x.eksikCikis} eksik çıkış`} ton="kirmizi" />
+                                        </TouchableOpacity>
+                                    ) : null}
                                 </View>
                                 <ChevronRight size={22} color="#8A93A3" />
                             </Kart>
