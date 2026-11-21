@@ -36,6 +36,8 @@ export interface MesaiKaydiOzet {
     noktaTuru?: string | null
     /** 4.6: yalniz kisinin kendi kaydinda (Mesai/Gecmisim); ucret kaydi yoksa null. */
     personelUcret?: number | null
+    /** 4.15 Eksik Mesai: eksik kayitta yazili uyari ("Mesai kapaması yapılmadığı için mesai ücreti alamayacaksınız."); eski sunucuda yok. */
+    uyari?: string | null
 }
 
 export interface MesaiDurumu {

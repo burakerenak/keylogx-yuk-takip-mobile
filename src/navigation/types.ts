@@ -43,6 +43,8 @@ export type AppStackParamList = {
         yil: number
         ay: number
         donemAdi: string
+        /** 4.15 Eksik Mesai: yalniz eksik kayitlar (bildirimden ya da ay kartindaki eksik etiketinden). */
+        yalnizEksik?: boolean
     },
     ChangePassword: undefined,
     /** 4.14 (#615): firma ici mesajlasma sohbet listesi. */
